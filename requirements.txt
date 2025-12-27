@@ -1,0 +1,7 @@
+//Kích hoạt virtual environment
+.\.venv\Scripts\activate
+
+
+//Cài đặt thư viện
+pip install flask flask-jwt-extended opencv-python torch facenet-pytorch
+
