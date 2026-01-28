@@ -11,6 +11,7 @@ Mở thư mục muốn clone về, gõ cmd trên thanh đường dẫn, sau đó
 <img src="huong_dan/cmd.png" alt="Demo nhận diện" width="600" height="auto">
 <hr>
 <img src="huong_dan/cmd2.png" alt="Demo nhận diện" width="600" height="auto">
+
 ```bash
 git init
 git remote add origin https://github.com/Ngocthuy3011/NCKH-Hard-To-Neglect.git
