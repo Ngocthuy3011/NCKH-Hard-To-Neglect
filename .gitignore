@@ -1,0 +1,26 @@
+# venv/ 
+# .venv/
+# env/
+
+# face recognition system/
+
+# __pycache__/
+# *.py[cod]
+# *$py.class
+
+# # Loại bỏ thư mục cấu hình của trình soạn thảo (nếu muốn)
+# .vscode/
+# .idea/
+
+# *.jpg
+# *.jpeg
+# *.png
+
+# 1. Chặn toàn bộ mọi thứ trong thư mục hiện tại
+/*
+
+# 2. Ngoại lệ: Không chặn file .gitignore (để Git vẫn nhớ quy tắc này)
+!.gitignore
+
+# 3. Ngoại lệ: Cho phép theo dõi thư mục cụ thể
+!database/
