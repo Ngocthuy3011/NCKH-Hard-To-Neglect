@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chụp ảnh MSSV (WebSocket Only)</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        /* Chồng canvas lên video */
+        .video-box { position: relative; display: inline-block; margin-top: 15px; }
+        video { border: 2px solid #333; border-radius: 8px; transform: scaleX(-1); background: black; }
+        canvas { position: absolute; top: 0; left: 0; transform: scaleX(-1); pointer-events: none; }
+
+        input { padding: 10px; width: 200px; font-size: 16px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        #status { font-weight: bold; margin-top: 10px; min-height: 24px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📸 Chụp ảnh Điểm danh</h2>
+        
+        <div>
+            <input type="text" id="mssv" placeholder="Nhập MSSV (VD: 52400)" />
+        </div>
+
+        <p id="status" style="color: gray;">Đang kết nối Camera...</p>
+
+        <div class="video-box">
+            <video id="video" width="640" height="480" autoplay playsinline></video>
+            <canvas id="canvas_draw" width="640" height="480"></canvas>
+        </div>
+        <div style="margin-top: 15px;">
+            <button id="btn-capture" onclick="triggerCapture()">📷 Chụp Ảnh</button>
+        </div>
+    </div>
+
+    <canvas id="canvas_hidden" width="640" height="480" style="display:none;"></canvas>
+
+    <script>
+        const WS_URL = "ws://localhost:8000/ws/register";
+        
+        const video = document.getElementById('video');
+        const canvasDraw = document.getElementById('canvas_draw');
+        const ctxDraw = canvasDraw.getContext('2d');
+        const canvasHidden = document.getElementById('canvas_hidden');
+        const ctxHidden = canvasHidden.getContext('2d');
+        const statusTxt = document.getElementById('status');
+        const btnCapture = document.getElementById('btn-capture');
+
+        let socket;
+        let isFaceFound = false; // Chỉ cho chụp khi thấy mặt
+
+        // 1. Kết nối WebSocket
+        function connectWS() {
+            socket = new WebSocket(WS_URL);
+
+            socket.onopen = () => {
+                statusTxt.innerText = "✅ Sẵn sàng. Hãy nhập MSSV và bấm chụp.";
+                statusTxt.style.color = "green";
+                // Gửi stream liên tục để vẽ khung
+                setInterval(sendFrameForPreview, 100); 
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                // Xóa khung cũ
+                ctxDraw.clearRect(0, 0, 640, 480);
+
+                if (data.status === "found") {
+                    isFaceFound = true;
+                    const [x1, y1, x2, y2] = data.box;
+                    
+                    // Vẽ khung xanh
+                    ctxDraw.strokeStyle = "#00FF00";
+                    ctxDraw.lineWidth = 3;
+                    ctxDraw.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                    // Nếu Server báo đã lưu xong
+                    if (data.saved_path) {
+                        alert("✅ Đã lưu ảnh thành công!\nFile: " + data.saved_path);
+                        document.getElementById('mssv').value = ""; // Xóa ô nhập
+                    }
+                } else {
+                    isFaceFound = false;
+                }
+            };
+        }
+
+        // 2. Hàm gửi ảnh liên tục (Chỉ để Preview & Detect)
+        function sendFrameForPreview() {
+            if (socket.readyState === WebSocket.OPEN) {
+                ctxHidden.drawImage(video, 0, 0, 640, 480);
+                canvasHidden.toBlob(blob => {
+                    socket.send(blob); // Gửi ẢNH (Bytes)
+                }, 'image/jpeg', 0.8);
+            }
+        }
+
+        // 3. Hàm kích hoạt chụp (Gửi TEXT)
+        function triggerCapture() {
+            const mssv = document.getElementById('mssv').value.trim();
+            
+            if (!mssv) {
+                alert("⚠️ Vui lòng nhập MSSV!");
+                return;
+            }
+            if (!isFaceFound) {
+                alert("⚠️ Chưa thấy khuôn mặt! Hãy nhìn vào camera.");
+                return;
+            }
+
+            // Gửi lệnh TEXT báo server biết: "Tấm ảnh tiếp theo là của MSSV này đấy, lưu đi!"
+            const command = JSON.stringify({ mssv: mssv });
+            socket.send(command);
+            
+            statusTxt.innerText = "⏳ Đang lưu...";
+        }
+
+        // 4. Bật Camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { 
+                video.srcObject = stream; 
+                connectWS();
+            })
+            .catch(err => alert("Lỗi Camera: " + err));
+
+    </script>
+</body>
+</html>
