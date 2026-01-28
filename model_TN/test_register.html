@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký Khuôn mặt Đa hướng</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        video { width: 100%; max-width: 400px; border: 2px solid #333; border-radius: 8px; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        input { padding: 10px; font-size: 16px; margin: 10px; }
+        #status { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Đăng ký Sinh viên Mới</h2>
+    <input type="text" id="mssv" placeholder="Nhập MSSV (VD: 10221001)">
+    <br>
+    <video id="video" autoplay playsinline></video>
+    <br>
+    <button onclick="captureAndSend()">📸 Chụp & Gửi</button>
+    <div id="status">Hãy nhập MSSV và bấm chụp</div>
+    <div id="instruction">Vui lòng chụp 5 góc: Thẳng, Trái, Phải, Ngước, Cúi</div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const status = document.getElementById('status');
+
+        // 1. Mở Camera (Hỗ trợ cả điện thoại)
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" } // Camera trước
+        })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => { status.innerText = "Lỗi Camera: " + err; });
+
+        // 2. Hàm chụp và gửi ảnh
+        function captureAndSend() {
+            const mssv = document.getElementById('mssv').value;
+            if (!mssv) { alert("Vui lòng nhập MSSV!"); return; }
+
+            // Chụp ảnh từ video vẽ lên canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            // Chuyển canvas thành blob (file ảnh)
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('file', blob, 'face.jpg');
+                formData.append('student_id', mssv);
+
+                status.innerText = "Đang gửi...";
+
+                // Gửi lên API
+                fetch('http://localhost:8000/api/register', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        status.style.color = "green";
+                        status.innerText = "✅ Đã lưu! Hãy quay mặt góc khác và chụp tiếp.";
+                    } else {
+                        status.style.color = "red";
+                        status.innerText = "❌ Lỗi: " + data.message;
+                    }
+                })
+                .catch(err => {
+                    status.innerText = "Lỗi kết nối Server!";
+                    console.error(err);
+                });
+            }, 'image/jpeg');
+        }
+    </script>
+</body>
+</html>

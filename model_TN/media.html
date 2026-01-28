@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhận diện khuôn mặt với MediaPipe</title>
+    
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+        }
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        /* Video ẩn đi, chỉ dùng để lấy dữ liệu */
+        .input_video {
+            display: none; 
+        }
+        /* Canvas sẽ hiển thị hình ảnh và vẽ khung nhận diện */
+        .output_canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+        h2 { margin-bottom: 10px; }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <h2>Demo Nhận Diện Khuôn Mặt MediaPipe</h2>
+    <div class="container">
+        <video class="input_video"></video>
+        <canvas class="output_canvas" width="640" height="480"></canvas>
+    </div>
+
+    <script>
+        // Lấy các phần tử DOM
+        const videoElement = document.getElementsByClassName('input_video')[0];
+        const canvasElement = document.getElementsByClassName('output_canvas')[0];
+        const canvasCtx = canvasElement.getContext('2d');
+
+        // --- HÀM XỬ LÝ KẾT QUẢ (QUAN TRỌNG NHẤT) ---
+        function onResults(results) {
+            // 1. Xóa canvas cũ để vẽ frame mới
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // 2. Vẽ hình ảnh từ webcam lên canvas
+            canvasCtx.drawImage(
+                results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            // 3. Nếu tìm thấy khuôn mặt
+            if (results.detections.length > 0) {
+                // Duyệt qua từng khuôn mặt tìm được
+                for (const detection of results.detections) {
+                    // Vẽ khung bao quanh khuôn mặt (Bounding Box)
+                    drawRectangle(canvasCtx, detection.boundingBox, {color: 'blue', lineWidth: 4, fillColor: '#00000000'});
+                    
+                    // Vẽ các điểm mốc chính (Mắt, mũi, miệng...)
+                    drawLandmarks(canvasCtx, detection.landmarks, {color: 'red', radius: 5});
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        // --- CẤU HÌNH MEDIAPIPE FACE DETECTION ---
+        const faceDetection = new FaceDetection({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+        }});
+
+        faceDetection.setOptions({
+            model: 'short', // 'short' cho khoảng cách gần (webcam), 'full' cho xa
+            minDetectionConfidence: 0.5 // Độ tin cậy tối thiểu (50%)
+        });
+
+        // Gắn hàm xử lý kết quả
+        faceDetection.onResults(onResults);
+
+        // --- CẤU HÌNH CAMERA ---
+        // Sử dụng thư viện CameraUtils để tự động lấy frame từ webcam gửi vào MediaPipe
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceDetection.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+        function stopCamera() {
+            // 1. Dừng MediaPipe xử lý
+            if (camera) {
+                camera.stop(); 
+            }
+
+            // 2. Lấy luồng video đang chạy trong thẻ <video>
+            const stream = videoElement.srcObject;
+            
+            if (stream) {
+                // 3. Tìm tất cả các "track" (kênh hình ảnh/âm thanh) và tắt từng cái
+                const tracks = stream.getTracks();
+                tracks.forEach(track => {
+                    track.stop(); // Đây chính là lệnh tắt đèn Camera
+                });
+
+                // 4. Gỡ bỏ luồng video khỏi thẻ <video>
+                videoElement.srcObject = null;
+            }
+        }
+        // Bắt đầu chạy Camera
+        camera.start();
+        // press q to stop camera, press again to start
+        let isCameraOn = true;
+
+        document.addEventListener('keydown', (e) => {
+            // Chấp nhận cả 'q' thường và 'Q' hoa
+            if (e.key.toLowerCase() === 'q') {
+                
+                if (isCameraOn) {
+                    // Đang bật thì tắt đi
+                    stopCamera();
+                    isCameraOn = false;
+                    console.log("Đã tắt camera");
+                    
+                    // (Tuỳ chọn) Xóa canvas cho sạch, tránh bị kẹt hình cuối cùng
+                    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                    
+                } else {
+                    // Đang tắt thì bật lại
+                    camera.start();
+                    isCameraOn = true;
+                    console.log("Đã bật camera");
+                }
+            }
+        });
+    </script>
+</body>
+</html>
