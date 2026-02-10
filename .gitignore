@@ -1,3 +1,6 @@
-*.zip
-*.onnx
-model_TN/insightface_model/models/
+venv/
+.env
+__pycache__/
+*.pyc
+/bin/
+data/*.pkl
