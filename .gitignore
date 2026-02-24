@@ -1,12 +1,6 @@
-venv/ 
-.venv/
-env/
-
+venv/
+.env
 __pycache__/
-*.py[cod]
-*$py.class
-
-
-*.zip
-*.onnx
-model_TN/insightface_model/models/
+*.pyc
+/bin/
+data/*.pkl
