@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # CHỈNH SỬA TẠI ĐÂY: Thay đổi user, password, port tương ứng với file docker-compose của bạn
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:nckh@HTN@localhost:5433/postgres"
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
 
 # Động cơ kết nối
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
