@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Boolean, Integer, ARRAY, Float, DateTime, ForeignKey, Text
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import relationship
-from database import Base # Import Base từ file database.py vừa tạo
+from .database import Base # Import Base từ file database.py vừa tạo
 from datetime import datetime
 
 class Account(Base):
@@ -15,7 +15,7 @@ class Account(Base):
     role = Column(String(20), default='student') # Khớp với user_role trong SQL
 
     # Liên kết ngược lại với sinh viên
-    student = relationship("Student", back_populates="account", uselist=False)
+    student = relationship("Students", back_populates="account", uselist=False)
 
 #BẢNG LƯU THÔNG TIN SINH VIÊN
 class Students(Base):
@@ -34,7 +34,7 @@ class Students(Base):
 
     # Relationships
     account = relationship("Account", back_populates="student")
-    faces = relationship("FaceEmbedding", back_populates="student", cascade="all, delete-orphan")
+    faces = relationship("Faces_embedding", back_populates="student", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="student")
 
 #Bảng môn học
@@ -56,6 +56,15 @@ class Classes(Base):
     teacher_name = Column(String(100), nullable=False)
     semester = Column(String(20), nullable=False)
 
+class Enrollments(Base):
+    __tablename__ = 'enrollments'
+
+    # Khóa chính kết hợp từ 2 cột
+    student_id = Column(String(20), ForeignKey("students.student_id"), primary_key=True)
+    class_id = Column(Integer, ForeignKey("classes.class_id"), primary_key=True)
+    enrollment_date = Column(DateTime, default=datetime.now)
+    status = Column(String(20), default="active")
+
 #Bảng lưu vector khuôn mặt
 class Faces_embedding(Base):
     __tablename__ = 'faces_embedding'
@@ -63,11 +72,11 @@ class Faces_embedding(Base):
     id = Column(Integer,primary_key=True, autoincrement=True)
 
     #Mỗi SV cần nhiều ảnh nên không dùng MSSV làm khóa chính
-    student_id = Column(String(20), ForeignKey("students.student_code", ondelete="CASCADE"), nullable=False) #MSSV
+    student_id = Column(String(20), ForeignKey("students.student_id", ondelete="CASCADE"), nullable=False) #MSSV
     face_vector = Column(Vector(512), nullable=False) 
     image_url = Column(Text) #Đường dẫn đến ảnh được embedding
     create_at = Column(DateTime, default=datetime.now)
-    student = relationship("Student", back_populates="faces")
+    student = relationship("Students", back_populates="faces")
 
 #BẢNG LỊCH SỬ ĐIỂM DANH
 class Attendance(Base):
@@ -81,9 +90,10 @@ class Attendance(Base):
     class_id = Column(Integer, ForeignKey("classes.class_id"), nullable=False)
     time = Column(DateTime, default=datetime.now)
     status = Column(String(20), default='vắng')
+    session_no = Column(Integer, default = 1)
 
     #Mối quan hệ giúp truy xuất dữ liệu thông minh
-    student = relationship("Student", back_populates="attendances")
+    student = relationship("Students", back_populates="attendances")
 
 
 

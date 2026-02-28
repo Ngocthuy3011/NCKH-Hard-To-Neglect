@@ -1,3 +1,4 @@
+
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
@@ -118,3 +119,6 @@ select * from enrollments;
 select * from faces_embedding;
 
 ALTER USER postgres WITH PASSWORD 'nckh@HTN';
+
+ALTER TABLE attendance 
+ADD COLUMN session_no INTEGER DEFAULT 1;
