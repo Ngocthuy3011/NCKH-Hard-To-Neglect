@@ -1,0 +1,155 @@
+import uvicorn
+from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from pgvector.sqlalchemy import Vector
+import base64
+import numpy as np
+import cv2
+from insightface.app import FaceAnalysis
+from datetime import datetime
+
+# ==========================================
+# 1. KHỞI TẠO FASTAPI & SWAGGER TỰ ĐỘNG
+# ==========================================
+app = FastAPI(
+    title="Hệ thống nhận diện khuôn mặt API",
+    description="API phục vụ cho việc đăng ký và điểm danh sinh viên",
+    version="1.0.0"
+)
+
+# Cấu hình CORS cho phép Web JS gọi vào API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ==========================================
+# 2. CẤU HÌNH DATABASE POSTGRESQL & SQLALCHEMY
+# ==========================================
+# (Nhớ sửa lại user, password và tên database của bạn)
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+class FaceEmbedding(Base):
+    __tablename__ = 'faces_embedding'
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(String(20), nullable=False, unique=True)
+    vector_straight = Column(Vector(512), nullable=True)
+    vector_left = Column(Vector(512), nullable=True)
+    vector_right = Column(Vector(512), nullable=True)
+    image_url = Column(Text, nullable=True)
+    create_at = Column(DateTime, default=datetime.utcnow)
+
+# Tự động tạo bảng nếu chưa có
+Base.metadata.create_all(bind=engine)
+
+# Hàm cấp phát Session DB cho mỗi lần gọi API
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ==========================================
+# 3. KHỞI TẠO INSIGHTFACE
+# ==========================================
+print("Đang tải mô hình InsightFace...")
+app_face = FaceAnalysis(name='buffalo_l', root='./insightface_model', providers=['CPUExecutionProvider'])
+app_face.prepare(ctx_id=0, det_size=(640, 640))
+print("Khởi tạo xong InsightFace!")
+
+# ==========================================
+# 4. KHAI BÁO MODEL PYDANTIC (Định nghĩa JSON đầu vào cho Swagger)
+# ==========================================
+class ImagesDict(BaseModel):
+    straight: List[str] = []
+    left: List[str] = []
+    right: List[str] = []
+
+class RegisterFaceRequest(BaseModel):
+    student_id: str
+    images: ImagesDict
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "student_id": "52400056",
+                "images": {
+                    "straight": ["data:image/jpeg;base64,..."],
+                    "left": ["data:image/jpeg;base64,..."],
+                    "right": ["data:image/jpeg;base64,..."]
+                }
+            }
+        }
+
+# ==========================================
+# 5. CÁC HÀM XỬ LÝ ẢNH
+# ==========================================
+def base64_to_cv2(base64_string):
+    encoded_data = base64_string.split(',')[1]
+    nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
+    return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+def avg_vector(base64_list):
+    if not base64_list:
+        return None
+    vectors = []
+    for b64 in base64_list:
+        img = base64_to_cv2(b64)
+        faces = app_face.get(img)
+        if len(faces) > 0:
+            vectors.append(faces[0].embedding)
+            
+    if not vectors:
+        return None
+    return np.mean(vectors, axis=0).tolist()
+
+# ==========================================
+# 6. API ĐĂNG KÝ (ENDPOINT)
+# ==========================================
+@app.post("/api/register-face", tags=["QuanLyKhuonMat"])
+def register_face(data: RegisterFaceRequest, db: Session = Depends(get_db)):
+    print(f"Đang xử lý vector cho sinh viên: {data.student_id}")
+
+    vec_straight = avg_vector(data.images.straight)
+    vec_left = avg_vector(data.images.left)
+    vec_right = avg_vector(data.images.right)
+
+    if not any([vec_straight, vec_left, vec_right]):
+         return {"status": "error", "message": "Không tìm thấy khuôn mặt trong bất kỳ ảnh nào!"}
+
+    try:
+        existing_student = db.query(FaceEmbedding).filter(FaceEmbedding.student_id == data.student_id).first()
+
+        if existing_student:
+            if vec_straight: existing_student.vector_straight = vec_straight
+            if vec_left: existing_student.vector_left = vec_left
+            if vec_right: existing_student.vector_right = vec_right
+        else:
+            new_student = FaceEmbedding(
+                student_id=data.student_id,
+                vector_straight=vec_straight,
+                vector_left=vec_left,
+                vector_right=vec_right
+            )
+            db.add(new_student)
+            
+        db.commit()
+        return {"status": "success", "message": f"Đã lưu thành công 3 góc mặt cho MSSV {data.student_id}!"}
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": f"Lỗi lưu Database: {str(e)}"}
+
+if __name__ == '__main__':
+    uvicorn.run("API_convert:app", host="0.0.0.0", port=8000, reload=True)
