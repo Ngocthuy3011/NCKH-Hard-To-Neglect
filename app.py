@@ -1,21 +1,13 @@
-from flask import Flask
-from flask_jwt_extended import JWTManager
-from routes.auth import auth_bp
+from fastapi import FastAPI
+from routes.auth import router as auth_router
+from routes.face import router as face_router
 
-app = Flask(__name__)
+app = FastAPI()
 
+# đăng ký router
+app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(face_router, prefix="/face", tags=["Face"])
 
-app.config["JWT_SECRET_KEY"] = "super-secret-key"  # sau này đưa vào .env
-
-
-jwt = JWTManager(app)
-
-
-app.register_blueprint(auth_bp)
-
-@app.route("/")
+@app.get("/")
 def home():
-    return {"status": "API is running"}
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return {"status": "FastAPI is running"}
