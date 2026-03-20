@@ -73,7 +73,9 @@ class Faces_embedding(Base):
 
     #Mỗi SV cần nhiều ảnh nên không dùng MSSV làm khóa chính
     student_id = Column(String(20), ForeignKey("students.student_id", ondelete="CASCADE"), nullable=False) #MSSV
-    face_vector = Column(Vector(512), nullable=False) 
+    vector_straight = Column(Vector(512), nullable=True)
+    vector_left = Column(Vector(512), nullable=True)
+    vector_right = Column(Vector(512), nullable=True)
     image_url = Column(Text) #Đường dẫn đến ảnh được embedding
     create_at = Column(DateTime, default=datetime.now)
     student = relationship("Students", back_populates="faces")
