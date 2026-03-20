@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-import models
+from database import models
 from sqlalchemy import func
 
 # HÀM THÊM MỚI TỔNG QUÁT
@@ -84,6 +84,8 @@ def get_class_attendance_summary(db: Session, class_id: int):
     ).all()
 
     return query
+
+
 
 # HÀM LẤY DANH SÁCH TỔNG QUÁT
 def get_all_items(db: Session, model_class, skip: int = 0, limit: int = 100):
