@@ -1,27 +1,48 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 from datetime import timedelta
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from utils.jwt_handler import create_access_token
+from utils.jwt_handler import create_access_token, decode_token
 
-auth_bp = Blueprint("auth", __name__)
+router = APIRouter()
 
-# Giả lập database
+# ===== MODEL REQUEST =====
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+# ===== FAKE DB =====
 USERS = {
     "51801003": {"password": "123456", "role": "student"},
     "GV001": {"password": "admin123", "role": "teacher"}
 }
 
-@auth_bp.route("/login", methods=["POST"])
-def login():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
+# ===== LOGIN =====
 
-    if username not in USERS or USERS[username]["password"] != password:
-        return jsonify({"msg": "Sai tài khoản hoặc mật khẩu"}), 401
 
-    access_token = create_access_token(
-        identity=username,
-        additional_claims={"role": USERS[username]["role"]}
-    )
+@router.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    username = form_data.username
+    password = form_data.password
 
-    return jsonify(access_token=access_token)
+    # demo user
+    if username != "51801003" or password != "123456":
+        return {"error": "Sai tài khoản hoặc mật khẩu"}
+
+    access_token = create_access_token({"sub": username})
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
+# ===== LOGOUT (BLACKLIST) =====
+BLACKLIST = set()
+
+@router.post("/logout")
+def logout(token: str = Depends(decode_token)):
+    BLACKLIST.add(token)
+    return {"message": "Đã logout"}
