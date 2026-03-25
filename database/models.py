@@ -1,8 +1,13 @@
 from sqlalchemy import Column, String, Boolean, Integer, ARRAY, Float, DateTime, ForeignKey, Text
-from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import relationship
 from .database import Base # Import Base từ file database.py vừa tạo
 from datetime import datetime
+
+try:
+    from pgvector.sqlalchemy import Vector
+except:
+    Vector = None
+
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -73,9 +78,14 @@ class Faces_embedding(Base):
 
     #Mỗi SV cần nhiều ảnh nên không dùng MSSV làm khóa chính
     student_id = Column(String(20), ForeignKey("students.student_id", ondelete="CASCADE"), nullable=False) #MSSV
-    vector_straight = Column(Vector(512), nullable=True)
-    vector_left = Column(Vector(512), nullable=True)
-    vector_right = Column(Vector(512), nullable=True)
+    if Vector:
+        vector_straight = Column(Vector(512), nullable=True)
+        vector_left = Column(Vector(512), nullable=True)
+        vector_right = Column(Vector(512), nullable=True)
+    else:
+        vector_straight = Column(String, nullable=True)
+        vector_left = Column(String, nullable=True)
+        vector_right = Column(String, nullable=True)
     image_url = Column(Text) #Đường dẫn đến ảnh được embedding
     create_at = Column(DateTime, default=datetime.now)
     student = relationship("Students", back_populates="faces")

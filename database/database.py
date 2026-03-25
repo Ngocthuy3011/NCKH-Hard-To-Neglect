@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
+
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 # CHỈNH SỬA TẠI ĐÂY: Thay đổi user, password, port tương ứng với file docker-compose của bạn
 SQLALCHEMY_DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
@@ -21,3 +24,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
+        
