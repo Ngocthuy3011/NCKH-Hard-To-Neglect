@@ -12,6 +12,17 @@ import cv2
 from insightface.app import FaceAnalysis
 from datetime import datetime
 
+import sys
+import os
+
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
+
+from database.database import engine, get_db
+from database.models import Base, FaceEmbedding
+
+
+Base.metadata.create_all(bind=engine)
 # ==========================================
 # 1. KHỞI TẠO FASTAPI & SWAGGER TỰ ĐỘNG
 # ==========================================
@@ -33,11 +44,6 @@ app.add_middleware(
 # ==========================================
 # 2. CẤU HÌNH DATABASE POSTGRESQL & SQLALCHEMY
 # ==========================================
-# (Nhớ sửa lại user, password và tên database của bạn)
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
 class FaceEmbedding(Base):
     __tablename__ = 'faces_embedding'
@@ -51,14 +57,6 @@ class FaceEmbedding(Base):
 
 # Tự động tạo bảng nếu chưa có
 Base.metadata.create_all(bind=engine)
-
-# Hàm cấp phát Session DB cho mỗi lần gọi API
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # ==========================================
 # 3. KHỞI TẠO INSIGHTFACE

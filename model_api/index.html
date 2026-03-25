@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Đăng Ký Khuôn Mặt eKYC</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin-top: 30px;
+        }
+        h2 { margin-bottom: 20px; color: #4CAF50; }
+        
+        .controls-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+        input {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #555;
+            background-color: #333;
+            color: white;
+            text-align: center;
+            width: 250px;
+            outline: none;
+        }
+        input:focus { border-color: #4CAF50; }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            transition: 0.3s;
+        }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+
+        .camera-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            border: 3px solid #4CAF50;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        video { 
+            display: none; 
+            transform: scaleX(-1); /* Lật ngược thẻ video */
+        }
+        canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            transform: scaleX(-1); /* Lật ngược tấm kính hiển thị */
+        }
+        
+        #status {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 25px;
+            text-align: center;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Hệ Thống Thu Thập Dữ Liệu Khuôn Mặt Sinh Viên</h2>
+
+    <div class="controls-container">
+        <input type="text" id="student_id_input" placeholder="Nhập Mã số sinh viên...">
+        <button id="start_btn">Bắt Đầu Quét Khuôn Mặt</button>
+    </div>
+
+    <div class="camera-container">
+        <video id="input_video" autoplay playsinline></video>
+        <canvas id="output_canvas" width="640" height="480"></canvas>
+    </div>
+
+    <div id="status">Vui lòng nhập MSSV và bấm Bắt đầu</div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>

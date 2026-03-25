@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 /bin/
 data/*.pkl
+model_api/insightface_model/
