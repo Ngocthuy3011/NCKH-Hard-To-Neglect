@@ -99,10 +99,12 @@ faceMesh.onResults((results) => {
             isPoseTargetOK = (yawRatio > 0.7 && yawRatio < 1.3);
         } else if (currentStage === 'left') {
             instructionMsg = "Vui lòng quay mặt sang trái";
-            isPoseTargetOK = (yawRatio < 0.6); 
+            // SỬA Ở ĐÂY: Đổi (yawRatio < 0.6) thành (yawRatio > 1.4)
+            isPoseTargetOK = (yawRatio > 1.4); 
         } else if (currentStage === 'right') {
             instructionMsg = "Vui lòng quay mặt sang phải";
-            isPoseTargetOK = (yawRatio > 1.4); 
+            // SỬA Ở ĐÂY: Đổi (yawRatio > 1.4) thành (yawRatio < 0.6)
+            isPoseTargetOK = (yawRatio < 0.6); 
         }
 
         // Vẽ cái hộp bao quanh khuôn mặt để người dùng dễ căn chỉnh
@@ -208,9 +210,9 @@ function sendDataToFastAPI() {
         } else {
             statusText.innerText = "❌ Lỗi: " + data.message;
             statusText.style.color = "red";
-            startBtn.disabled = false; // Cho phép thử lại
-            currentStage = 'straight'; // Reset kịch bản
-            capturedImages = { straight: [], left: [], right: [] }; // Reset kho ảnh
+            startBtn.disabled = false; 
+            currentStage = 'straight'; 
+            capturedImages = { straight: [], left: [], right: [] }; 
         }
     })
     .catch(err => {
