@@ -6,6 +6,13 @@ from database.database import Base, engine
 from database import models
 from dotenv import load_dotenv
 load_dotenv()
+
+import os
+from sqlalchemy import create_engine
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
 

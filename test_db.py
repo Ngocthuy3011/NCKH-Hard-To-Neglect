@@ -94,3 +94,4 @@ def test_session_detail():
 if __name__ == "__main__":
     test_summary()
     test_session_detail()
+

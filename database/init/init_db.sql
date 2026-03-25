@@ -9,7 +9,7 @@
 
 -- Started on 2026-03-04 22:53:44
 
-SET statement_timeout = 0;
+--SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET transaction_timeout = 0;

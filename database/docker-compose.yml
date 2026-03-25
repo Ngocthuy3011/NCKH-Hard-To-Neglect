@@ -3,12 +3,14 @@ services:
     image: pgvector/pgvector:pg16
     container_name: postgres_vector_db
     ports:
-      - "5433:5432" #Cổng_Máy_Thật:Cổng_Trong_Container"
+      - "5433:5432" # Cổng máy thật : container
     environment:
-      POSTGRES_USER: postgres      # Đổi thành postgres cho giống mặc định
-      POSTGRES_PASSWORD: 'nckh@HTN' # Đặt mật khẩu bạn dễ nhớ
-      POSTGRES_DB: postgres        # Đổi tên DB thành postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 'nckh@HTN'
+      POSTGRES_DB: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init:/docker-entrypoint-initdb.dvolumes:
+      #- ./init:/docker-entrypoint-initdb.d
+
+volumes:
   postgres_data:
