@@ -5,3 +5,4 @@ __pycache__/
 /bin/
 data/*.pkl
 model_api/insightface_model/
+insightface_model/

@@ -19,7 +19,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 from database.database import engine, get_db
-from database.models import Base, FaceEmbedding
+from database.models import Base, Faces_embedding
 
 
 Base.metadata.create_all(bind=engine)
@@ -40,24 +40,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ==========================================
-# 2. CẤU HÌNH DATABASE POSTGRESQL & SQLALCHEMY
-# ==========================================
-
-class FaceEmbedding(Base):
-    __tablename__ = 'faces_embedding'
-    id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(String(20), nullable=False, unique=True)
-    vector_straight = Column(Vector(512), nullable=True)
-    vector_left = Column(Vector(512), nullable=True)
-    vector_right = Column(Vector(512), nullable=True)
-    image_url = Column(Text, nullable=True)
-    create_at = Column(DateTime, default=datetime.utcnow)
-
-# Tự động tạo bảng nếu chưa có
-Base.metadata.create_all(bind=engine)
-
 # ==========================================
 # 3. KHỞI TẠO INSIGHTFACE
 # ==========================================
@@ -115,26 +97,71 @@ def avg_vector(base64_list):
 # ==========================================
 # 6. API ĐĂNG KÝ (ENDPOINT)
 # ==========================================
+# @app.post("/api/register-face", tags=["QuanLyKhuonMat"])
+# def register_face(data: RegisterFaceRequest, db: Session = Depends(get_db)):
+#     print(f"Đang xử lý vector cho sinh viên: {data.student_id}")
+
+#     vec_straight = avg_vector(data.images.straight)
+#     vec_left = avg_vector(data.images.left)
+#     vec_right = avg_vector(data.images.right)
+
+#     if not any([vec_straight, vec_left, vec_right]):
+#          return {"status": "error", "message": "Không tìm thấy khuôn mặt trong bất kỳ ảnh nào!"}
+
+#     try:
+#         existing_student = db.query(Faces_embedding).filter(Faces_embedding.student_id == data.student_id).first()
+
+#         if existing_student:
+#             if vec_straight: existing_student.vector_straight = vec_straight
+#             if vec_left: existing_student.vector_left = vec_left
+#             if vec_right: existing_student.vector_right = vec_right
+#         else:
+#             new_student = Faces_embedding(
+#                 student_id=data.student_id,
+#                 vector_straight=vec_straight,
+#                 vector_left=vec_left,
+#                 vector_right=vec_right
+#             )
+#             db.add(new_student)
+            
+#         db.commit()
+#         return {"status": "success", "message": f"Đã lưu thành công 3 góc mặt cho MSSV {data.student_id}!"}
+
+#     except Exception as e:
+#         db.rollback()
+#         return {"status": "error", "message": f"Lỗi lưu Database: {str(e)}"}
+
 @app.post("/api/register-face", tags=["QuanLyKhuonMat"])
 def register_face(data: RegisterFaceRequest, db: Session = Depends(get_db)):
-    print(f"Đang xử lý vector cho sinh viên: {data.student_id}")
+    print(f"👉 BƯỚC 1: Đã nhận được yêu cầu từ MSSV: {data.student_id}")
+    print(f"   - Số ảnh góc Thẳng gửi lên: {len(data.images.straight)} tấm")
 
+    # Ép kiểu ảnh thành Vector
     vec_straight = avg_vector(data.images.straight)
     vec_left = avg_vector(data.images.left)
     vec_right = avg_vector(data.images.right)
 
+    print(f"👉 BƯỚC 2: Kết quả InsightFace trích xuất Vector:")
+    print(f"   - Góc thẳng: {'✅ Thành công' if vec_straight else '❌ FAILED (Không thấy mặt)'}")
+    print(f"   - Góc trái:  {'✅ Thành công' if vec_left else '❌ FAILED (Không thấy mặt)'}")
+    print(f"   - Góc phải:  {'✅ Thành công' if vec_right else '❌ FAILED (Không thấy mặt)'}")
+
     if not any([vec_straight, vec_left, vec_right]):
+         print("🛑 DỪNG LẠI: Không có bất kỳ Vector nào được tạo ra. Hủy lưu Database!")
          return {"status": "error", "message": "Không tìm thấy khuôn mặt trong bất kỳ ảnh nào!"}
 
     try:
-        existing_student = db.query(FaceEmbedding).filter(FaceEmbedding.student_id == data.student_id).first()
+        print("👉 BƯỚC 3: Bắt đầu gọi cửa PostgreSQL...")
+        existing_student = db.query(Faces_embedding).filter(Faces_embedding.student_id == data.student_id).first()
 
         if existing_student:
+            print("   - Đã thấy MSSV này trong kho, tiến hành GHI ĐÈ dữ liệu...")
             if vec_straight: existing_student.vector_straight = vec_straight
             if vec_left: existing_student.vector_left = vec_left
             if vec_right: existing_student.vector_right = vec_right
         else:
-            new_student = FaceEmbedding(
+            print("   - Đây là sinh viên mới, tiến hành TẠO HỒ SƠ MỚI...")
+            new_student = Faces_embedding(
                 student_id=data.student_id,
                 vector_straight=vec_straight,
                 vector_left=vec_left,
@@ -143,11 +170,13 @@ def register_face(data: RegisterFaceRequest, db: Session = Depends(get_db)):
             db.add(new_student)
             
         db.commit()
+        print("🎉 BƯỚC 4: LƯU THÀNH CÔNG VÀO POSTGRESQL!")
         return {"status": "success", "message": f"Đã lưu thành công 3 góc mặt cho MSSV {data.student_id}!"}
 
     except Exception as e:
         db.rollback()
+        print(f"🚨 BÁO ĐỘNG ĐỎ - LỖI DATABASE: {str(e)}")
         return {"status": "error", "message": f"Lỗi lưu Database: {str(e)}"}
 
 if __name__ == '__main__':
-    uvicorn.run("API_convert:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("API_CreateVec:app", host="0.0.0.0", port=8000, reload=True)
