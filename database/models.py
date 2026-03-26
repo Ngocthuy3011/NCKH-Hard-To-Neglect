@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Boolean, Integer, ARRAY, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from .database import Base # Import Base từ file database.py vừa tạo
+from database import Base # Import Base từ file database.py vừa tạo
 from datetime import datetime
 
 try:
@@ -21,6 +21,15 @@ class Account(Base):
 
     # Liên kết ngược lại với sinh viên
     student = relationship("Students", back_populates="account", uselist=False)
+    teacher = relationship("Teachers", back_populates="account", uselist=False)
+
+class Major(Base):
+    __tablename__ = "majors"
+    major_code = Column(String(20), primary_key=True)
+    major_name = Column(String(100), nullable=False)
+    department_name = Column(String(100))
+    
+    students = relationship("Students", back_populates="major")
 
 #BẢNG LƯU THÔNG TIN SINH VIÊN
 class Students(Base):
@@ -39,9 +48,30 @@ class Students(Base):
 
     # Relationships
     account = relationship("Account", back_populates="student")
+    major = relationship("Major", back_populates="students")
     faces = relationship("Faces_embedding", back_populates="student", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="student")
 
+#Bảng lưu thông tin của giảng viên
+# BẢNG LƯU THÔNG TIN GIẢNG VIÊN
+class Teachers(Base):
+    __tablename__ = 'teachers'
+
+    # ID giảng viên (thường dùng mã giảng viên làm username luôn)
+    teacher_id = Column(String(50), ForeignKey("accounts.username", ondelete="CASCADE"), 
+                        primary_key=True, nullable=False)
+    
+    department = Column(String(100))     # Khoa (Ví dụ: Công nghệ thông tin)
+    degree = Column(String(50))         # Học vị (Ví dụ: Thạc sĩ, Tiến sĩ)
+    phone_number = Column(String(15))   # Số điện thoại liên lạc
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+
+    # Relationships - Liên kết ngược lại với tài khoản
+    account = relationship("Account", back_populates="teacher")
+    # Liên kết với các lớp học mà thầy/cô này dạy
+    classes = relationship("Classes", back_populates="teacher_rel")
+    
 #Bảng môn học
 class Subject(Base):
     __tablename__ = "subjects"
@@ -58,8 +88,13 @@ class Classes(Base):
     subject_id = Column(String(20), nullable=False)
     group_id = Column(Integer, nullable=False)
     sub_id = Column(Integer, nullable=True)
-    teacher_name = Column(String(100), nullable=False)
+    # teacher_name = Column(String(100), nullable=False)
+    teacher_id = Column(String(50), ForeignKey("accounts.username"), nullable=False)
     semester = Column(String(20), nullable=False)
+
+    # Relationships
+    teacher_rel = relationship("Teachers", back_populates="classes")
+    enrollments = relationship("Enrollments", back_populates="class_obj")
 
 class Enrollments(Base):
     __tablename__ = 'enrollments'
@@ -67,7 +102,7 @@ class Enrollments(Base):
     # Khóa chính kết hợp từ 2 cột
     student_id = Column(String(20), ForeignKey("students.student_id"), primary_key=True)
     class_id = Column(Integer, ForeignKey("classes.class_id"), primary_key=True)
-    enrollment_date = Column(DateTime, default=datetime.now)
+    enrollment_date = Column(DateTime, default=datetime.now().date)
     status = Column(String(20), default="active")
 
 #Bảng lưu vector khuôn mặt
@@ -88,6 +123,7 @@ class Faces_embedding(Base):
         vector_right = Column(String, nullable=True)
     image_url = Column(Text) #Đường dẫn đến ảnh được embedding
     create_at = Column(DateTime, default=datetime.now)
+
     student = relationship("Students", back_populates="faces")
 
 #BẢNG LỊCH SỬ ĐIỂM DANH

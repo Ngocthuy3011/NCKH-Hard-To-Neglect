@@ -17,7 +17,7 @@ def create_item(db: Session, model_class, schema_data):
     db.refresh(db_item) #Cập nhật
     return db_item
 
-def get_lecturer_classes(db: Session, teacher_name: str):
+def get_lecturer_classes(db: Session, teacher_id: str):
     # Lọc danh sách lớp dựa trên tên giảng viên trong bảng Classes
     return db.query(
         models.Classes.class_id,
@@ -25,7 +25,7 @@ def get_lecturer_classes(db: Session, teacher_name: str):
         models.Classes.group_id,   # Nhóm
         models.Classes.sub_id,     # Tổ
         models.Classes.semester    # Học kỳ
-    ).filter(models.Classes.teacher_name == teacher_name).all()
+    ).filter(models.Classes.teacher_id == teacher_id).all()
 
 #Hàm trả về danh sách sinh viên điểm danh trong buổi học
 def get_attendance_detail_by_session(db: Session, class_id: int, session_no: int):
@@ -55,7 +55,7 @@ def get_attendance_detail_by_session(db: Session, class_id: int, session_no: int
     
     return results
 
-#    Thống kê tổng số buổi đi học, vắng, trễ của từng sinh viên trong một lớp cụ thể.
+# Thống kê tổng số buổi đi học, vắng, trễ của từng sinh viên trong một lớp cụ thể.
 def get_class_attendance_summary(db: Session, class_id: int):
 
     # 1. Bắt đầu từ bảng Account để lấy tên, JOIN qua Students và Enrollments
@@ -85,7 +85,80 @@ def get_class_attendance_summary(db: Session, class_id: int):
 
     return query
 
+def get_student_enrolled_classes(db: Session, student_id: str):
+    """
+    Lấy danh sách các lớp học mà một sinh viên đang tham gia.
+    """
+    return db.query(
+        models.Classes.class_id,
+        models.Classes.subject_id,   # Mã môn học (ví dụ: IT001)
+        models.Classes.group_id,     # Nhóm (ví dụ: 1)
+        models.Classes.teacher_id, # Tên giảng viên
+        models.Classes.semester      # Học kỳ
+    ).join(
+        models.Enrollments, 
+        models.Classes.class_id == models.Enrollments.class_id
+    ).filter(
+        models.Enrollments.student_id == student_id,
+        models.Enrollments.status == "active" # Chỉ lấy các lớp đang học
+    ).all()
 
+def get_student_enrollment_history(db: Session, student_id: str):
+    """
+    Thống kê tất cả các lớp (đã và đang học) của một sinh viên dựa trên student_id.
+    """
+    return db.query(
+        models.Classes.class_id,
+        models.Classes.subject_id,
+        models.Subject.subject_name,  # Lấy tên môn học từ bảng Subjects
+        models.Classes.group_id,
+        models.Classes.semester,
+        models.Enrollments.enrollment_date,
+        models.Enrollments.status      # Để phân biệt đang học (active) hay đã xong
+    ).join(
+        models.Enrollments, 
+        models.Classes.class_id == models.Enrollments.class_id
+    ).join(
+        models.Subject, 
+        models.Classes.subject_id == models.Subject.subject_id
+    ).filter(
+        models.Enrollments.student_id == student_id
+    ).order_by(
+        models.Classes.semester.desc() # Sắp xếp học kỳ mới nhất lên đầu
+    ).all()
+
+def get_student_attendance_stats(db: Session, student_id: str, class_id: int):
+    """
+    Thống kê chi tiết lịch sử điểm danh và tổng hợp số buổi Vắng/Trễ/Hiện diện
+    của một sinh viên trong một lớp cụ thể.
+    """
+    # 1. Lấy danh sách chi tiết các buổi điểm danh
+    history = db.query(models.Attendance).filter(
+        models.Attendance.student_id == student_id,
+        models.Attendance.class_id == class_id
+    ).order_by(models.Attendance.session_no.asc()).all()
+
+    # 2. Truy vấn tổng hợp (Aggregation) để đếm số lượng từng loại trạng thái
+    stats = db.query(
+        models.Attendance.status,
+        func.count(models.Attendance.id).label('count')
+    ).filter(
+        models.Attendance.student_id == student_id,
+        models.Attendance.class_id == class_id
+    ).group_by(models.Attendance.status).all()
+
+    # Chuyển kết quả count thành dictionary cho dễ dùng
+    summary = {stat.status: stat.count for stat in stats}
+    
+    return {
+        "history": history,
+        "summary": {
+            "vắng": summary.get("vắng", 0),
+            "trễ": summary.get("trễ", 0),
+            "có mặt": summary.get("có mặt", 0), # Giả sử bạn dùng tag này cho hiện diện
+            "tổng_buổi": sum(summary.values())
+        }
+    }
 
 # HÀM LẤY DANH SÁCH TỔNG QUÁT
 def get_all_items(db: Session, model_class, skip: int = 0, limit: int = 100):
