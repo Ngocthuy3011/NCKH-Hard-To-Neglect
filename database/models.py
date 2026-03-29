@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Boolean, Integer, ARRAY, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from database import Base # Import Base từ file database.py vừa tạo
+from .database import Base # Import Base từ file database.py vừa tạo
 from datetime import datetime
 
 try:
@@ -40,7 +40,7 @@ class Students(Base):
     
     class_name = Column(String(20)) #Lớp cố định vd:24050302
     #Mã ngành
-    major_code = Column(String(20)) #tạm thời khai báo bình thường
+    major_code = Column(String(20), ForeignKey("majors.major_code", ondelete="SET NULL")) #tạm thời khai báo bình thường
     #Tình trạng: Mặc định đang học
     is_active = Column(Boolean, default = True)
     #Thời gian tạo
@@ -89,7 +89,7 @@ class Classes(Base):
     group_id = Column(Integer, nullable=False)
     sub_id = Column(Integer, nullable=True)
     # teacher_name = Column(String(100), nullable=False)
-    teacher_id = Column(String(50), ForeignKey("accounts.username"), nullable=False)
+    teacher_id = Column(String(50), ForeignKey("teachers.teacher_id"), nullable=False)
     semester = Column(String(20), nullable=False)
 
     # Relationships
@@ -104,6 +104,9 @@ class Enrollments(Base):
     class_id = Column(Integer, ForeignKey("classes.class_id"), primary_key=True)
     enrollment_date = Column(DateTime, default=datetime.now().date)
     status = Column(String(20), default="active")
+
+    class_obj = relationship("Classes", back_populates="enrollments")
+    student_obj = relationship("Students")
 
 #Bảng lưu vector khuôn mặt
 class Faces_embedding(Base):
@@ -121,8 +124,8 @@ class Faces_embedding(Base):
         vector_straight = Column(String, nullable=True)
         vector_left = Column(String, nullable=True)
         vector_right = Column(String, nullable=True)
-    image_url = Column(Text) #Đường dẫn đến ảnh được embedding
-    create_at = Column(DateTime, default=datetime.now)
+    # image_url = Column(Text) #Đường dẫn đến ảnh được embedding
+    created_at = Column(DateTime, default=datetime.now)
 
     student = relationship("Students", back_populates="faces")
 

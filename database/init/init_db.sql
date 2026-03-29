@@ -2,14 +2,14 @@
 -- PostgreSQL database dump
 --
 
-\restrict hqfSNR1GwTv6sIDgsXlxCGTME3rxor5rKjZdBbJre25bmoDXEXTOOzhQnM2em3N
+\restrict bhL6EYgLCpxCZJm8qST4miNucgf2eKh0wt6RhlZsiKyzrJUQbOIEfqAdRjaN9mE
 
 -- Dumped from database version 16.11 (Debian 16.11-1.pgdg12+1)
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-03-04 22:53:44
+-- Started on 2026-03-29 12:38:46
 
---SET statement_timeout = 0;
+SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET transaction_timeout = 0;
@@ -30,7 +30,7 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
 
 
 --
--- TOC entry 3678 (class 0 OID 0)
+-- TOC entry 3689 (class 0 OID 0)
 -- Dependencies: 2
 -- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: 
 --
@@ -39,7 +39,7 @@ COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access met
 
 
 --
--- TOC entry 966 (class 1247 OID 16389)
+-- TOC entry 967 (class 1247 OID 16389)
 -- Name: user_role; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -89,7 +89,7 @@ CREATE SEQUENCE public.accounts_id_seq
 ALTER SEQUENCE public.accounts_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3679 (class 0 OID 0)
+-- TOC entry 3690 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -139,7 +139,7 @@ CREATE TABLE public.classes (
     subject_id character varying(20) NOT NULL,
     group_id integer NOT NULL,
     sub_id integer,
-    teacher_name character varying(100) NOT NULL,
+    teacher_id character varying(50) NOT NULL,
     semester character varying(20) NOT NULL
 );
 
@@ -163,7 +163,7 @@ CREATE SEQUENCE public.classes_class_id_seq
 ALTER SEQUENCE public.classes_class_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3680 (class 0 OID 0)
+-- TOC entry 3691 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: classes_class_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -194,9 +194,10 @@ ALTER TABLE public.enrollments OWNER TO postgres;
 CREATE TABLE public.faces_embedding (
     id integer NOT NULL,
     student_id character varying(20) NOT NULL,
-    face_vector public.vector(512) NOT NULL,
-    image_url text,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    vector_straight public.vector(512),
+    vector_left public.vector(512),
+    vector_right public.vector(512)
 );
 
 
@@ -219,7 +220,7 @@ CREATE SEQUENCE public.faces_embedding_id_seq
 ALTER SEQUENCE public.faces_embedding_id_seq OWNER TO postgres;
 
 --
--- TOC entry 3681 (class 0 OID 0)
+-- TOC entry 3692 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: faces_embedding_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -272,7 +273,23 @@ CREATE TABLE public.subjects (
 ALTER TABLE public.subjects OWNER TO postgres;
 
 --
--- TOC entry 3478 (class 2604 OID 16397)
+-- TOC entry 228 (class 1259 OID 41006)
+-- Name: teachers; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.teachers (
+    teacher_id character varying(50) NOT NULL,
+    department character varying(100),
+    degree character varying(50),
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.teachers OWNER TO postgres;
+
+--
+-- TOC entry 3482 (class 2604 OID 16397)
 -- Name: accounts id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -280,7 +297,7 @@ ALTER TABLE ONLY public.accounts ALTER COLUMN id SET DEFAULT nextval('public.acc
 
 
 --
--- TOC entry 3484 (class 2604 OID 24652)
+-- TOC entry 3488 (class 2604 OID 24652)
 -- Name: classes class_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -288,7 +305,7 @@ ALTER TABLE ONLY public.classes ALTER COLUMN class_id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 3482 (class 2604 OID 24630)
+-- TOC entry 3486 (class 2604 OID 24630)
 -- Name: faces_embedding id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -296,7 +313,7 @@ ALTER TABLE ONLY public.faces_embedding ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 3662 (class 0 OID 16394)
+-- TOC entry 3672 (class 0 OID 16394)
 -- Dependencies: 217
 -- Data for Name: accounts; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -316,76 +333,62 @@ COPY public.accounts (id, username, password, email, full_name, role) FROM stdin
 4	52400022	$2b$12$cRJb00e8M1W3UWsCnr.a1unQoGHNnlnZ7h5gJQeSDAtzJWNkywzzC	52400022@student.tdtu.edu.vn	Mai Thu Minh	student
 5	52400044	$2b$12$Q7IyNd6DteSAaFNX4AXnBOjbt4AHe4ewvQm9LY4Wq3Y8.a6kgaFuS	52400044@student.tdtu.edu.vn	Nguyễn Ngọc Đức	student
 6	52400074	$2b$12$zGMEy8dUjDgSWD1Gj47Z1eOsrjgGzTukYlsokmcNltA6BFJscEj3K	52400074@student.tdtu.edu.vn	Hồ Thị Gia Hân	student
+15	2025002	$2b$12$s6fc5oYyt0Gw17QxOMYEdeR8bd3cs1MBSUaoHSsxRmCE4cf/jjh6.	tranvana@truong.edu.vn	 Trần Văn A	teacher
 \.
 
 
 --
--- TOC entry 3672 (class 0 OID 24678)
+-- TOC entry 3682 (class 0 OID 24678)
 -- Dependencies: 227
 -- Data for Name: attendance; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.attendance (id, student_id, class_id, "time", status, session_no) FROM stdin;
-1	52400046	8	2026-02-28 16:04:08.769012	đi học	1
-2	52400046	2	2026-02-28 16:10:45.437056	đi học	1
-3	52400044	2	2026-02-28 16:27:06.917752	trễ	1
-4	52400319	8	2026-02-28 16:29:34.813535	đi học	1
-5	52400056	8	2026-02-28 16:29:34.855548	vắng	1
-6	52400046	1	2026-02-28 16:36:12.963635	đi học	1
-7	52400046	8	2026-02-28 17:06:40.155454	đi học	2
-9	52400044	2	2026-02-28 17:11:25.082515	vắng	2
-8	52400046	2	2026-02-28 17:11:25.009473	đi học	2
 \.
 
 
 --
--- TOC entry 3669 (class 0 OID 24649)
+-- TOC entry 3679 (class 0 OID 24649)
 -- Dependencies: 224
 -- Data for Name: classes; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.classes (class_id, subject_id, group_id, sub_id, teacher_name, semester) FROM stdin;
-1	502061	2	1	Lê Tuấn Thu	2/2025-2026
-2	504008	2	\N	Trần Quang Huy	2/2025-2026
-3	306104	13	\N	Lê Thị Lan	2/2025-2026
-4	504008	2	1	Trần Quang Huy	2/2025-2026
-5	503043	2	\N	Trịnh Hùng Cường	2/2025-2026
-6	502061	2	\N	Trần Hà Sơn	2/2025-2026
-7	503109	1	\N	Hồ Thị Linh	2/2025-2026
-8	504	1	\N	NCKH	2/2025-2026
-9	502051	1	1	Lê Anh Khoa	2/2025-2026
-10	502051	1	\N	Dương Hớn Minh	2/2025-2026
+COPY public.classes (class_id, subject_id, group_id, sub_id, teacher_id, semester) FROM stdin;
+11	504	1	\N	2025001	2/2025-2026
+13	306104	13	\N	2025002	2/2025-2026
 \.
 
 
 --
--- TOC entry 3670 (class 0 OID 24655)
+-- TOC entry 3680 (class 0 OID 24655)
 -- Dependencies: 225
 -- Data for Name: enrollments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.enrollments (student_id, class_id, enrollment_date, status) FROM stdin;
-52400046	1	2026-01-26	active
-52400046	2	2026-01-26	active
-52400044	2	2026-01-26	active
-52400046	8	2026-01-26	active
-52400319	8	2026-01-26	active
-52400056	8	2026-01-26	active
+52400046	11	2026-03-25	active
+52400056	11	2026-03-25	active
+52400319	11	2026-03-25	active
+52400044	11	2026-03-25	active
+52400022	11	2026-03-25	active
+52400074	11	2026-03-25	active
+52400078	11	2026-03-25	active
+52400046	13	2026-03-27	active
 \.
 
 
 --
--- TOC entry 3667 (class 0 OID 24627)
+-- TOC entry 3677 (class 0 OID 24627)
 -- Dependencies: 222
 -- Data for Name: faces_embedding; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.faces_embedding (id, student_id, face_vector, image_url, created_at) FROM stdin;
+COPY public.faces_embedding (id, student_id, created_at, vector_straight, vector_left, vector_right) FROM stdin;
 \.
 
 
 --
--- TOC entry 3663 (class 0 OID 24598)
+-- TOC entry 3673 (class 0 OID 24598)
 -- Dependencies: 218
 -- Data for Name: majors; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -398,7 +401,7 @@ COPY public.majors (major_code, major_name, department_name) FROM stdin;
 
 
 --
--- TOC entry 3664 (class 0 OID 24603)
+-- TOC entry 3674 (class 0 OID 24603)
 -- Dependencies: 219
 -- Data for Name: students; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -414,7 +417,7 @@ COPY public.students (student_id, class_name, major_code, is_active, created_at)
 
 
 --
--- TOC entry 3665 (class 0 OID 24620)
+-- TOC entry 3675 (class 0 OID 24620)
 -- Dependencies: 220
 -- Data for Name: subjects; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -431,7 +434,19 @@ COPY public.subjects (subject_id, subject_name, created_at) FROM stdin;
 
 
 --
--- TOC entry 3682 (class 0 OID 0)
+-- TOC entry 3683 (class 0 OID 41006)
+-- Dependencies: 228
+-- Data for Name: teachers; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.teachers (teacher_id, department, degree, is_active, created_at) FROM stdin;
+2025001	Công nghệ thông tin	Tiến sĩ	t	2026-03-25 15:13:12.544084
+2025002	Khoa học xã hội và nhân văn	Thạc sĩ	t	2026-03-27 13:11:28.113338
+\.
+
+
+--
+-- TOC entry 3693 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: accounts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -440,7 +455,7 @@ SELECT pg_catalog.setval('public.accounts_id_seq', 2, true);
 
 
 --
--- TOC entry 3683 (class 0 OID 0)
+-- TOC entry 3694 (class 0 OID 0)
 -- Dependencies: 226
 -- Name: attendance_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -449,16 +464,16 @@ SELECT pg_catalog.setval('public.attendance_id_seq', 9, true);
 
 
 --
--- TOC entry 3684 (class 0 OID 0)
+-- TOC entry 3695 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: classes_class_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.classes_class_id_seq', 10, true);
+SELECT pg_catalog.setval('public.classes_class_id_seq', 13, true);
 
 
 --
--- TOC entry 3685 (class 0 OID 0)
+-- TOC entry 3696 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: faces_embedding_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -467,7 +482,7 @@ SELECT pg_catalog.setval('public.faces_embedding_id_seq', 1, false);
 
 
 --
--- TOC entry 3491 (class 2606 OID 16405)
+-- TOC entry 3497 (class 2606 OID 16405)
 -- Name: accounts accounts_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -476,7 +491,7 @@ ALTER TABLE ONLY public.accounts
 
 
 --
--- TOC entry 3493 (class 2606 OID 16401)
+-- TOC entry 3499 (class 2606 OID 16401)
 -- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -485,7 +500,7 @@ ALTER TABLE ONLY public.accounts
 
 
 --
--- TOC entry 3495 (class 2606 OID 16403)
+-- TOC entry 3501 (class 2606 OID 16403)
 -- Name: accounts accounts_username_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -494,7 +509,7 @@ ALTER TABLE ONLY public.accounts
 
 
 --
--- TOC entry 3511 (class 2606 OID 24684)
+-- TOC entry 3517 (class 2606 OID 24684)
 -- Name: attendance attendance_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -503,7 +518,7 @@ ALTER TABLE ONLY public.attendance
 
 
 --
--- TOC entry 3505 (class 2606 OID 24654)
+-- TOC entry 3511 (class 2606 OID 24654)
 -- Name: classes classes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -512,7 +527,7 @@ ALTER TABLE ONLY public.classes
 
 
 --
--- TOC entry 3507 (class 2606 OID 24668)
+-- TOC entry 3513 (class 2606 OID 24668)
 -- Name: enrollments enrollments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -521,7 +536,7 @@ ALTER TABLE ONLY public.enrollments
 
 
 --
--- TOC entry 3503 (class 2606 OID 24635)
+-- TOC entry 3509 (class 2606 OID 24635)
 -- Name: faces_embedding faces_embedding_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -530,7 +545,7 @@ ALTER TABLE ONLY public.faces_embedding
 
 
 --
--- TOC entry 3497 (class 2606 OID 24602)
+-- TOC entry 3503 (class 2606 OID 24602)
 -- Name: majors majors_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -539,7 +554,7 @@ ALTER TABLE ONLY public.majors
 
 
 --
--- TOC entry 3499 (class 2606 OID 24609)
+-- TOC entry 3505 (class 2606 OID 24609)
 -- Name: students students_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -548,7 +563,7 @@ ALTER TABLE ONLY public.students
 
 
 --
--- TOC entry 3501 (class 2606 OID 24625)
+-- TOC entry 3507 (class 2606 OID 24625)
 -- Name: subjects subjects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -557,7 +572,16 @@ ALTER TABLE ONLY public.subjects
 
 
 --
--- TOC entry 3509 (class 2606 OID 24661)
+-- TOC entry 3519 (class 2606 OID 41012)
+-- Name: teachers teachers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.teachers
+    ADD CONSTRAINT teachers_pkey PRIMARY KEY (teacher_id);
+
+
+--
+-- TOC entry 3515 (class 2606 OID 24661)
 -- Name: enrollments unique_student_class; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -566,7 +590,7 @@ ALTER TABLE ONLY public.enrollments
 
 
 --
--- TOC entry 3512 (class 2606 OID 24610)
+-- TOC entry 3520 (class 2606 OID 24610)
 -- Name: students fk_accounts; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -575,7 +599,7 @@ ALTER TABLE ONLY public.students
 
 
 --
--- TOC entry 3516 (class 2606 OID 24690)
+-- TOC entry 3525 (class 2606 OID 24690)
 -- Name: attendance fk_attendance_class; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -584,7 +608,7 @@ ALTER TABLE ONLY public.attendance
 
 
 --
--- TOC entry 3517 (class 2606 OID 24685)
+-- TOC entry 3526 (class 2606 OID 24685)
 -- Name: attendance fk_attendance_student; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -593,7 +617,7 @@ ALTER TABLE ONLY public.attendance
 
 
 --
--- TOC entry 3515 (class 2606 OID 24662)
+-- TOC entry 3524 (class 2606 OID 24662)
 -- Name: enrollments fk_class; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -602,7 +626,16 @@ ALTER TABLE ONLY public.enrollments
 
 
 --
--- TOC entry 3513 (class 2606 OID 24615)
+-- TOC entry 3523 (class 2606 OID 41054)
+-- Name: classes fk_classes_teacher; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.classes
+    ADD CONSTRAINT fk_classes_teacher FOREIGN KEY (teacher_id) REFERENCES public.teachers(teacher_id);
+
+
+--
+-- TOC entry 3521 (class 2606 OID 24615)
 -- Name: students fk_majors; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -611,7 +644,7 @@ ALTER TABLE ONLY public.students
 
 
 --
--- TOC entry 3514 (class 2606 OID 24636)
+-- TOC entry 3522 (class 2606 OID 24636)
 -- Name: faces_embedding fk_student_code; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -619,11 +652,20 @@ ALTER TABLE ONLY public.faces_embedding
     ADD CONSTRAINT fk_student_code FOREIGN KEY (student_id) REFERENCES public.students(student_id) ON DELETE CASCADE;
 
 
--- Completed on 2026-03-04 22:53:45
+--
+-- TOC entry 3527 (class 2606 OID 41013)
+-- Name: teachers fk_teacher_account; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.teachers
+    ADD CONSTRAINT fk_teacher_account FOREIGN KEY (teacher_id) REFERENCES public.accounts(username) ON DELETE CASCADE;
+
+
+-- Completed on 2026-03-29 12:38:47
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hqfSNR1GwTv6sIDgsXlxCGTME3rxor5rKjZdBbJre25bmoDXEXTOOzhQnM2em3N
+\unrestrict bhL6EYgLCpxCZJm8qST4miNucgf2eKh0wt6RhlZsiKyzrJUQbOIEfqAdRjaN9mE
 

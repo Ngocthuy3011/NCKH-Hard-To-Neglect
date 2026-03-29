@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from database import models
 from sqlalchemy import func
+from fastapi.encoders import jsonable_encoder
 
 # HÀM THÊM MỚI TỔNG QUÁT
 def create_item(db: Session, model_class, schema_data):
@@ -17,8 +18,9 @@ def create_item(db: Session, model_class, schema_data):
     db.refresh(db_item) #Cập nhật
     return db_item
 
+#ROUTE CỦA GIẢNG VIÊN
 def get_lecturer_classes(db: Session, teacher_id: str):
-    # Lọc danh sách lớp dựa trên tên giảng viên trong bảng Classes
+    """ Lọc danh sách lớp dựa trên tên giảng viên trong bảng Classes """
     return db.query(
         models.Classes.class_id,
         models.Classes.subject_id, # Mã MH
@@ -85,6 +87,7 @@ def get_class_attendance_summary(db: Session, class_id: int):
 
     return query
 
+#ROUTE CỦA SINH VIÊN
 def get_student_enrolled_classes(db: Session, student_id: str):
     """
     Lấy danh sách các lớp học mà một sinh viên đang tham gia.
@@ -115,7 +118,7 @@ def get_student_enrollment_history(db: Session, student_id: str):
         models.Classes.semester,
         models.Enrollments.enrollment_date,
         models.Enrollments.status      # Để phân biệt đang học (active) hay đã xong
-    ).join(
+    ). outerjoin(
         models.Enrollments, 
         models.Classes.class_id == models.Enrollments.class_id
     ).join(
@@ -127,7 +130,7 @@ def get_student_enrollment_history(db: Session, student_id: str):
         models.Classes.semester.desc() # Sắp xếp học kỳ mới nhất lên đầu
     ).all()
 
-def get_student_attendance_stats(db: Session, student_id: str, class_id: int):
+def get_student_attendance_status(db: Session, student_id: str, class_id: int):
     """
     Thống kê chi tiết lịch sử điểm danh và tổng hợp số buổi Vắng/Trễ/Hiện diện
     của một sinh viên trong một lớp cụ thể.
