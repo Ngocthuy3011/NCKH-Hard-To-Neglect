@@ -24,7 +24,7 @@ async def attendance_auto(student_code: str, class_id: int, session: int, db: Se
     ).first()
 
     if already_checked:
-        return
+        return {"status": "info", "message": "Sinh viên này đã được điểm danh trước đó"}
 
     # 3. Nếu chưa có thì mới tiến hành điểm danh "đi học"
     data_to_save = {
@@ -80,7 +80,6 @@ async def finalize(class_id: int, session: int, db: Session = Depends(database.g
 
     # 3. Lấy danh sách những bạn ĐÃ có mặt trong bảng attendance
     present_student_ids = db.query(models.Attendance.student_id).filter(
-        models.Attendance.class_id == class_id,
         models.Attendance.class_id == class_id,
         models.Attendance.session_no == session
     ).all()

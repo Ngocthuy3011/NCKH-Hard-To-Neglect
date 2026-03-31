@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Điểm Danh AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Cấm cuộn chuột trong popup */
+        }
+        .header-title {
+            color: #00e5ff;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .camera-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+        video { display: none; }
+        canvas { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            transform: scaleX(-1);
+        }
+        #status_msg {
+            margin-top: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: yellow;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="header-title" id="class_title">Hệ Thống Nhận Diện Sinh Viên</h2>
+
+    <div class="camera-container">
+        <video id="input_video" autoplay playsinline></video>
+        <canvas id="output_canvas" width="800" height="600"></canvas>
+    </div>
+
+    <div id="status_msg">Khởi động Camera...</div>
+
+    <script>
+        // --- 1. ĐỌC MÃ LỚP TỪ URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedClassId = urlParams.get('class_id');
+        
+        const statusMsg = document.getElementById('status_msg');
+        
+        if (!selectedClassId) {
+            document.getElementById('class_title').innerText = "LỖI HỆ THỐNG!";
+            document.getElementById('class_title').style.color = "red";
+            statusMsg.innerText = "⚠️ Truy cập trái phép. Vui lòng bật camera từ trang quản lý!";
+            statusMsg.style.color = "red";
+        } else {
+            document.getElementById('class_title').innerText = `Điểm Danh Cho Lớp ID: ${selectedClassId}`;
+        }
+
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+
+        let isChecking = false; 
+        let lastCheckTime = 0; 
+        let boxColor = "yellow"; 
+        const TARGET_FPS = 15; 
+        const FRAME_INTERVAL = 1000 / TARGET_FPS;
+
+        // --- 2. KHỞI TẠO AI MEDIAPIPE ---
+        const faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }});
+        faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.7 });
+
+        faceMesh.onResults((results) => {
+            // NẾU KHÔNG CÓ CLASS ID THÌ CẤM CHẠY
+            if (!selectedClassId) return;
+
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+                
+                let xMin = 1, yMin = 1, xMax = 0, yMax = 0;
+                for (let pt of landmarks) {
+                    if (pt.x < xMin) xMin = pt.x;
+                    if (pt.x > xMax) xMax = pt.x;
+                    if (pt.y < yMin) yMin = pt.y;
+                    if (pt.y > yMax) yMax = pt.y;
+                }
+                const w = canvasElement.width; const h = canvasElement.height;
+                
+                canvasCtx.beginPath();
+                canvasCtx.lineWidth = 4;
+                canvasCtx.strokeStyle = boxColor;
+                canvasCtx.rect(xMin * w, yMin * h, (xMax - xMin) * w, (yMax - yMin) * h);
+                canvasCtx.stroke();
+
+                const currentTime = Date.now();
+
+                if (currentTime - lastCheckTime >= FRAME_INTERVAL && !isChecking) { 
+                    
+                    isChecking = true;
+                    lastCheckTime = currentTime; 
+
+                    statusMsg.innerText = "Đang nhận diện...";
+                    boxColor = "yellow"; 
+                    statusMsg.style.color = "yellow";
+
+                    const snapCanvas = document.createElement('canvas');
+                    snapCanvas.width = results.image.width;
+                    snapCanvas.height = results.image.height;
+                    snapCanvas.getContext('2d').drawImage(results.image, 0, 0);
+                    const base64Image = snapCanvas.toDataURL('image/jpeg', 0.8);
+
+                    // --- 3. GỌI API ĐIỂM DANH ---
+                    fetch('http://localhost:8000/api/check-attendance-ai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_base64: base64Image,
+                            class_id: parseInt(selectedClassId), // Sử dụng ID lấy từ URL
+                            session_no: 1
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            boxColor = "lime"; 
+                            statusMsg.style.color = "lime";
+                            statusMsg.innerText = `✅ Xin chào: ${data.student_id}`;
+                            setTimeout(() => { 
+                                isChecking = false; 
+                                boxColor = "yellow"; 
+                            }, 3000);
+                        } else {
+                            boxColor = "orange";
+                            statusMsg.style.color = "orange";
+                            statusMsg.innerText = "Đang phân tích...";
+                            isChecking = false; 
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        isChecking = false;
+                    });
+                }
+            } else {
+                statusMsg.innerText = "Vui lòng nhìn thẳng vào Camera";
+                statusMsg.style.color = "yellow";
+                boxColor = "yellow";
+            }
+        });
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await faceMesh.send({image: videoElement}); },
+            width: 800, height: 600
+        });
+        
+        // Khởi động cam nếu có class_id hợp lệ
+        if (selectedClassId) {
+            camera.start();
+            statusMsg.innerText = "Vui lòng nhìn thẳng vào Camera";
+        }
+    </script>
+</body>
+</html>

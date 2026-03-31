@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh Sách Điểm Danh Lớp Học</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 { color: #4CAF50; margin-bottom: 20px; }
+        
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            background-color: #2d2d2d;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        th { background-color: #333; color: #4CAF50; font-size: 18px; }
+        tr:hover { background-color: #3a3a3a; }
+        
+        .status-pending { color: #ffeb3b; font-weight: bold; } 
+        .status-success { color: #00e676; font-weight: bold; }
+        
+        /* Style cho các nút điều khiển */
+        .controls-wrapper {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn-open-cam {
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn-open-cam:hover { background-color: #1976D2; }
+    </style>
+</head>
+<body>
+
+    <h2>Bảng Theo Dõi Điểm Danh Thời Gian Thực</h2>
+    
+    <div class="controls-wrapper">
+        <label for="class_select" style="font-weight: bold; font-size: 18px; color: #00e5ff;">Chọn lớp học: </label>
+        <select id="class_select" style="padding: 10px; border-radius: 5px; font-size: 16px; background-color: #333; color: white;">
+            <option value="">-- Đang tải dữ liệu... --</option>
+        </select>
+        
+        <button class="btn-open-cam" onclick="openCameraPopup()">📸 Bật Camera Điểm Danh</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>MSSV</th>
+                <th>Họ và Tên</th>
+                <th>Trạng Thái</th>
+            </tr>
+        </thead>
+        <tbody id="student_table_body"></tbody>
+    </table>
+
+    <script>
+        // --- WEBSOCKET XỬ LÝ ĐỔI MÀU BẢNG KHI CÓ NGƯỜI QUÉT MẶT ---
+        const ws = new WebSocket("ws://localhost:8000/ws");
+        ws.onopen = () => console.log("🟢 Đã kết nối Websocket tới Bảng danh sách.");
+        ws.onmessage = function(event) {
+            if (event.data.startsWith("ATTENDANCE_SUCCESS:")) {
+                const mssv = event.data.split(":")[1]; 
+                const statusCell = document.getElementById(`status_${mssv}`);
+                if (statusCell) {
+                    statusCell.innerText = "✅ Đã điểm danh";
+                    statusCell.className = "status-success"; 
+                    const row = document.getElementById(`tr_${mssv}`);
+                    row.style.backgroundColor = "#1b5e20"; 
+                    setTimeout(() => { row.style.backgroundColor = ""; }, 1000);
+                }
+            }
+        };
+
+        // --- HÀM TẢI LỚP TỪ DB ---
+        function loadClasses() {
+            fetch('http://localhost:8000/api/classes')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const classSelect = document.getElementById('class_select');
+                        classSelect.innerHTML = '<option value="">-- Bấm vào đây để chọn lớp --</option>';
+                        data.data.forEach(cls => {
+                            const option = document.createElement('option');
+                            option.value = cls.class_id;
+                            option.textContent = `Lớp ${cls.class_id} - Môn: ${cls.subject_id} - GV: ${cls.teacher_name}`;
+                            classSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => console.error("Lỗi tải lớp:", err));
+        }
+        document.addEventListener('DOMContentLoaded', loadClasses);
+
+        const classSelectDropdown = document.getElementById('class_select');
+        const studentTableBody = document.getElementById('student_table_body');
+
+        classSelectDropdown.addEventListener('change', function() {
+            const classId = this.value;
+            
+            studentTableBody.innerHTML = ''; 
+
+            if (!classId) return; 
+
+            studentTableBody.innerHTML = '<tr><td colspan="4">Đang tải danh sách sinh viên...</td></tr>';
+
+            fetch(`http://localhost:8000/api/class-students/${classId}`)
+                .then(res => res.json())
+                .then(data => {
+                    studentTableBody.innerHTML = ''; // Xóa chữ đang tải
+                    
+                    if (data.status === 'success') {
+                        if (data.data.length === 0) {
+                            studentTableBody.innerHTML = '<tr><td colspan="4" style="color: yellow;">Lớp này chưa có sinh viên nào đăng ký (Enrollments).</td></tr>';
+                            return;
+                        }
+
+                        // Duyệt qua mảng sinh viên và tạo thẻ <tr> in ra bảng
+                        data.data.forEach(student => {
+                            const tr = document.createElement('tr');
+                            tr.id = `tr_${student.student_id}`; // Đặt ID để Lát nữa Websocket tìm đúng người đổi màu
+                            
+                            tr.innerHTML = `
+                                <td>${student.stt}</td>
+                                <td>${student.student_id}</td>
+                                <td>${student.full_name}</td>
+                                <td class="status-pending" id="status_${student.student_id}">Chưa điểm danh</td>
+                            `;
+                            studentTableBody.appendChild(tr);
+                        });
+                    } else {
+                        studentTableBody.innerHTML = `<tr><td colspan="4" style="color: red;">Lỗi: ${data.message}</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi tải sinh viên:", err);
+                    studentTableBody.innerHTML = '<tr><td colspan="4" style="color: red;">Không thể kết nối máy chủ!</td></tr>';
+                });
+        });
+
+        // --- HÀM BẬT POPUP CAMERA ---
+        function openCameraPopup() {
+            const selectedClassId = document.getElementById('class_select').value;
+            if (!selectedClassId) {
+                alert("⚠️ Yêu cầu: Vui lòng chọn một lớp học trước khi bật Camera điểm danh!");
+                return;
+            }
+            // Mở màn hình camera dưới dạng Popup độc lập, truyền tham số class_id vào URL
+            window.open(`camera.html?class_id=${selectedClassId}`, 'CameraPopup', 'width=850,height=750,resizable=no,scrollbars=no');
+        }
+    </script>
+</body>
+</html>

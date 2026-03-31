@@ -88,11 +88,10 @@ class Classes(Base):
     subject_id = Column(String(20), nullable=False)
     group_id = Column(Integer, nullable=False)
     sub_id = Column(Integer, nullable=True)
-    # teacher_name = Column(String(100), nullable=False)
-    teacher_id = Column(String(50), ForeignKey("teachers.teacher_id"), nullable=False)
+    
+    teacher_id = Column(String(50), ForeignKey("teachers.teacher_id"))
     semester = Column(String(20), nullable=False)
 
-    # Relationships
     teacher_rel = relationship("Teachers", back_populates="classes")
     enrollments = relationship("Enrollments", back_populates="class_obj")
 
