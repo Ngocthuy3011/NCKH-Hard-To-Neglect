@@ -6,29 +6,37 @@ from database.database import SessionLocal, engine
 
 app = FastAPI()
 
-# Hàm lấy kết nối DB
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# --- ROUTES CHO GIẢNG VIÊN ---
 
-@app.get("/api/attendance-status/{student_id}/{class_id}")
-def get_attendance_status(student_id: str, class_id: int, db: Session = Depends(get_db)):
-    data = crud.get_student_attendance_status(db, student_id, class_id)
-    # Dùng jsonable_encoder để biến dữ liệu thành JSON chuẩn cho web
-    return jsonable_encoder(data)
+@app.get("/lecturer/{teacher_id}/classes")
+def read_lecturer_classes(teacher_id: str, db: Session = Depends(get_db)):
+    """Lấy danh sách các lớp giảng viên đó dạy"""
+    classes = crud.get_lecturer_classes(db, teacher_id=teacher_id)
+    return jsonable_encoder(classes)
 
-@app.get("/api/lecturer_classes/{teacher_id}")
-def get_lecturer_classes(teacher_id: str, db: Session = Depends(get_db)):
-    data = crud.get_lecturer_classes(teacher_id)
-    return data
+@app.get("/class/{class_id}/session/{session_no}")
+def read_attendance_by_session(class_id: int, session_no: int, db: Session = Depends(get_db)):
+    """Chi tiết điểm danh của một buổi học cụ thể"""
+    details = crud.get_attendance_detail_by_session(db, class_id, session_no)
+    return jsonable_encoder(details)
 
-def get_student_attendance_status(student_id: str, class_id: int, db: Session = Depends(get_db)):
-    return crud.get_student_attendance_status(db, student_id, class_id)
+@app.get("/class/{class_id}/summary")
+def read_class_attendance_summary(class_id: int, db: Session = Depends(get_db)):
+    """Bảng tổng kết chuyên cần của cả lớp (Vắng/Trễ/Đi học)"""
+    summary = crud.get_class_attendance_summary(db, class_id)
+    return jsonable_encoder(summary)
 
-@app.get("/api/student-history/{student_id}")
-def get_history(student_id: str, db: Session = Depends(get_db)):
+
+# --- ROUTES CHO SINH VIÊN ---
+
+@app.get("/student/{student_id}/enrolled-classes")
+def read_student_enrolled_classes(student_id: str, db: Session = Depends(get_db)):
+    """Danh sách các lớp sinh viên ĐANG học (active)"""
+    classes = crud.get_student_enrolled_classes(db, student_id)
+    return jsonable_encoder(classes)
+
+@app.get("/student/{student_id}/enrollment-history")
+def read_student_history(student_id: str, db: Session = Depends(get_db)):
+    """Lịch sử tất cả các môn đã và đang học của sinh viên"""
     history = crud.get_student_enrollment_history(db, student_id)
     return jsonable_encoder(history)
