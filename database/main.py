@@ -5,7 +5,13 @@ from database import crud, models
 from database.database import SessionLocal, engine
 
 app = FastAPI()
-
+# Hàm lấy kết nối DB
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 # --- ROUTES CHO GIẢNG VIÊN ---
 
 @app.get("/lecturer/{teacher_id}/classes")
@@ -40,3 +46,31 @@ def read_student_history(student_id: str, db: Session = Depends(get_db)):
     """Lịch sử tất cả các môn đã và đang học của sinh viên"""
     history = crud.get_student_enrollment_history(db, student_id)
     return jsonable_encoder(history)
+
+@app.get("/student/{student_id}/attendance-stats/{class_id}")
+def read_student_attendance_stats(student_id: str, class_id: int, db: Session = Depends(get_db)):
+    """Thống kê chi tiết điểm danh của 1 sinh viên trong 1 lớp"""
+    stats = crud.get_student_attendance_status(db, student_id, class_id)
+    return jsonable_encoder(stats)
+
+
+# --- ROUTE TỔNG QUÁT ---
+
+@app.get("/get-all/{table_name}")
+def get_all_data(table_name: str, db: Session = Depends(get_db)):
+    """Lấy toàn bộ dữ liệu của một bảng bất kỳ (Dùng cho Admin)"""
+    # Bản đồ map tên bảng với Model
+    table_map = {
+        "accounts": models.Account,
+        "students": models.Students,
+        "teachers": models.Teachers,
+        "subjects": models.Subject,
+        "classes": models.Classes
+    }
+    
+    model = table_map.get(table_name.lower())
+    if not model:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bảng này")
+        
+    data = crud.get_all_items(db, model)
+    return jsonable_encoder(data)
