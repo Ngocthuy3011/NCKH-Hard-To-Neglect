@@ -1,0 +1,58 @@
+/* Dashboard.css */
+
+.dashboard-wrapper {
+    width: 100%;
+    min-height: 80vh; /* Chiếm gần hết chiều cao vùng trắng */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 64px;
+    width: 100%;
+    max-width: 928px;
+    padding: 40px 20px;
+}
+
+.card {
+    aspect-ratio: 1 / 1;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(16px);
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.card:hover {
+    background: rgba(255, 255, 255, 0.8);
+    /* Lấy biến màu navy từ MainLayout.css */
+    border-color: #1e2a5e; 
+    transform: scale(1.05);
+}
+
+.card span {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+
+/* Cho điện thoại */
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        max-width: 300px;
+    }
+}

@@ -28,7 +28,7 @@ header {
 }
 
 header h1 {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -43,12 +43,12 @@ header h1 {
     justify-content: flex-end;
     align-items: center;
     gap: 15px;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 .user-avatar {
     width: 24px;
-    height: 24px;
+    height: auto;
     border-radius: 50%;
     object-fit: cover;
     background-color: #666; /* Màu nền dự phòng nếu ảnh lỗi */
