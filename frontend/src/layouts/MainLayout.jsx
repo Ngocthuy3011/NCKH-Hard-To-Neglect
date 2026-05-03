@@ -1,40 +1,56 @@
-import React from 'react';
-import './MainLayout.css'; // Chúng ta sẽ đưa phần CSS vào đây
+import "./MainLayout.css";
 import avatarImg from '../assets/user.png';
-
-const MainLayout = ({ children, userName}) => {
+import { AiOutlineHome, AiOutlineCheckCircle, AiOutlineBarChart, AiOutlineSetting } from "react-icons/ai";
+function LecturerLayout({ setPage, children }) {
   return (
-    <div className="layout-wrapper">
-      {/* Header cố định */}
-      <header>
-        <h1>HỆ THỐNG ĐIỂM DANH BẰNG<br />NHẬN DIỆN KHUÔN MẶT</h1>
-      </header>
+    <div className="wrapper">
+      <div className="header">
+        {/* Sửa lại thẻ br ở đây */}
+        <div className="system-name">
+        ĐIỂM DANH BẰNG<br></br> NHẬN DIỆN KHUÔN MẶT
+        </div>
 
-      {/* Thanh thông tin người dùng */}
-      <div className="user-info">
-        <span>{userName}</span>
-        {/* <div style={{ width: '24px', height: '24px', background: '#666', borderRadius: '50%' }}></div> */}
+        <div className="user-profile">
+          <div className="user-info">Nguyễn Văn A</div>
+            <img 
+              src={avatarImg} 
+              alt="User Avatar" 
+              className="user-avatar" 
+            />
+      </div>
+    </div>
 
-        <img 
-          src={avatarImg} 
-          alt="User Avatar" 
-          className="user-avatar" 
-        />
+      <div className="layout">
+        <div className="sidebar">
+          {/* Mỗi menu item bây giờ sẽ có thêm 1 thẻ span chứa icon */}
+          <div onClick={() => setPage("dashboard")} className="menu">
+            <AiOutlineHome className="menu-icon" /> <span>Trang chủ</span>
+          </div>
+          
+          <div onClick={() => setPage("attendance")} className="menu">
+            <AiOutlineCheckCircle className="menu-icon" /> <span>Điểm danh</span>
+          </div>
 
-        <img 
-          src="https://flagcdn.com/w20/vn.png" 
-          alt="VN Flag" 
-          className="flag-icon" 
-        />
-        {/* <img src="https://flagcdn.com/w20/vn.png" alt="VN" /> */}
-      </div> 
+          <div onClick={() => setPage("statistics")} className="menu">
+            <AiOutlineCheckCircle className="menu-icon" /> <span>Thống kê</span>
+          </div>
 
-      {/* Vùng nội dung chính - Sẽ thay đổi theo từng trang */}
-      <main>
-        {children}
-      </main>
+          {/* <div className="menu">
+            <AiOutlineBarChart className="menu-icon" /> <span>Thống kê</span>
+          </div> */}
+
+          <div className="menu">
+            <AiOutlineSetting className="menu-icon" /> <span>Quản lý</span>
+          </div>
+        </div>
+
+        <div className="main">
+          <div className="content">
+            {children}
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default MainLayout;
+}
+export default LecturerLayout;

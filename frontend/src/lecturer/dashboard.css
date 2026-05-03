@@ -1,58 +1,126 @@
-/* Dashboard.css */
-
-.dashboard-wrapper {
-    width: 100%;
-    min-height: 80vh; /* Chiếm gần hết chiều cao vùng trắng */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 64px;
-    width: 100%;
-    max-width: 928px;
-    padding: 40px 20px;
-}
-
 .card {
-    aspect-ratio: 1 / 1;
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(16px);
-    border: 2px solid #ccc;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  background-color: #ffffff !important; /* Ép buộc nó phải là màu trắng */  padding: 0px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;   /* trước có thể đang 40px hoặc h1 */
+  font-weight: 600;
+  margin-top: 0px;
+  border: 1px solid #e3e6f0; /* Thêm viền mỏng để phân biệt với nền trang */}
+
+.dashboard-header-line {
+  margin-top: 0;      /* Xóa bỏ khoảng cách phía trên khối tiêu đề */
+  margin-bottom: 12px; /* Giữ lại một chút khoảng cách với phần nội dung bên dưới */
 }
 
-.card:hover {
-    background: rgba(255, 255, 255, 0.8);
-    /* Lấy biến màu navy từ MainLayout.css */
-    border-color: #1e2a5e; 
-    transform: scale(1.05);
+.dashboard-title {
+  margin-top: 0;
+  padding-top: 0;
+  font-size: 20px;
+  color: #1a3772;
+  font-weight: 500;
+  font-style: italic; /* Dòng này sẽ làm chữ Trang chủ in nghiêng */
+  text-decoration: underline;
+  /* Nếu bạn muốn in nghiêng nhưng không quá "dày", có thể giảm font-weight */
+  /* font-weight: 500; */
+}
+.semester-title {
+  font-size: 18px;   /* trước có thể đang 40px hoặc h1 */
+  font-weight: 600;
+  margin-top: 0px;
+  color:rgb(54, 169, 100);
 }
 
-.card span {
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
-    text-transform: uppercase;
-    line-height: 1.4;
+textarea {
+  width: 100%;
+  margin-top: 0px;
+  padding: 10px;
+  min-height: 70px;
+  border: 1px solid #ccc;
 }
 
-/* Cho điện thoại */
-@media (max-width: 768px) {
-    .container {
-        grid-template-columns: 1fr;
-        gap: 20px;
-        max-width: 300px;
-    }
+.mini-calendar {
+  width: 300px; /* Kích thước lịch nhỏ gọn */
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 30px;
+}
+
+.calendar-title {
+  font-size: 18px;
+  color: #000000;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #3182ce; /* Màu xanh của tháng */
+  font-weight: bold;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr); /* 7 cột cho 7 thứ */
+  gap: 5px;
+  text-align: center;
+}
+
+.day-name {
+  font-weight: bold;
+  font-size: 12px;
+  color: #2d3748;
+  padding-bottom: 10px;
+  border-bottom: 1px dotted #cbd5e0;
+  margin-bottom: 5px;
+}
+
+.calendar-day {
+  font-size: 14px;
+  padding: 8px 0;
+  color: #4a5568;
+}
+
+/* Kiểu cho ngày hiện tại */
+.today-bold {
+  background: #667eea; /* Màu tím như trong hình của Hiền */
+  color: white !important;
+  font-weight: bold;
+  border-radius: 4px; /* Bo góc nhẹ cho ngày hiện tại */
+}
+
+.empty {
+  visibility: hidden;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: #3182ce;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Dòng chứa 2 cột */
+.dashboard-main-row {
+  display: flex;       /* Kích hoạt flexbox */
+  gap: 16px;           /* Khoảng cách giữa cột trái và cột phải */
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Cột trái tự động dãn rộng */
+.left-content {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cột phải giữ nguyên kích thước của lịch */
+.right-section {
+  flex-shrink: 0;
 }
