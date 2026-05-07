@@ -1,12 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import models, crud, database
+from database import models, crud, db
+from fastapi import FastAPI
+
+app = FastAPI()  # Dòng này cực kỳ quan trọng, uvicorn tìm chữ 'app' ở đây
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
 # --- CỔNG 1: ĐIỂM DANH TỰ ĐỘNG (Dành cho AI của Thắng) ---
 @router.post("/auto")
-async def attendance_auto(student_code: str, class_id: int, session: int, db: Session = Depends(database.get_db)):
+async def attendance_auto(student_code: str, class_id: int, session: int, db: Session = Depends(db.get_db)):
     # 1. Kiểm tra xem sinh viên có trong danh sách lớp (enrollments) không
     is_enrolled = db.query(models.Enrollments).filter(
         models.Enrollments.student_id == student_code,
@@ -38,7 +45,7 @@ async def attendance_auto(student_code: str, class_id: int, session: int, db: Se
 
 # --- CỔNG 2: ĐIỂM DANH THỦ CÔNG (Dành cho Giảng viên) ---
 @router.post("/manual")
-async def attendance_manual(student_code: str, class_id: int, status: str, session: int, db: Session = Depends(database.get_db)):
+async def attendance_manual(student_code: str, class_id: int, status: str, session: int, db: Session = Depends(db.get_db)):
     # 1. Vẫn phải kiểm tra xem SV có thuộc lớp không để tránh giảng viên chọn nhầm người lớp khác
     is_enrolled = db.query(models.Enrollments).filter(
         models.Enrollments.student_id == student_code,
@@ -74,7 +81,7 @@ async def attendance_manual(student_code: str, class_id: int, status: str, sessi
 
 # --- CỔNG 3: CHỐT DANH SÁCH (Tự động đánh vắng) ---
 @router.post("/finalize/{class_id}")
-async def finalize(class_id: int, session: int, db: Session = Depends(database.get_db)):
+async def finalize(class_id: int, session: int, db: Session = Depends(db.get_db)):
     # 1. Lấy danh sách từ bảng Enrollment vì đây mới là danh sách lớp thực tế
     class_enrollments = db.query(models.Enrollments).filter(models.Enrollments.class_id == class_id).all()
 

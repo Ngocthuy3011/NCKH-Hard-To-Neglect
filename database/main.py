@@ -1,10 +1,25 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, WebSocket, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-from database import crud, models
-from database.database import SessionLocal, engine
+import crud, models
+from db import SessionLocal, engine
 
 app = FastAPI()
+# Cấu hình danh sách các nguồn được phép truy cập
+origins = [
+    "http://localhost:5173",  # Cổng mặc định của Vite (theo ảnh của bạn)
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",  # Phòng hờ nếu bạn đổi cổng
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      # Cho phép các nguồn trong danh sách
+    allow_credentials=True,
+    allow_methods=["*"],        # Cho phép tất cả các phương thức (GET, POST,...)
+    allow_headers=["*"],        # Cho phép tất cả các loại headers
+)
 # Hàm lấy kết nối DB
 def get_db():
     db = SessionLocal()
@@ -74,3 +89,8 @@ def get_all_data(table_name: str, db: Session = Depends(get_db)):
         
     data = crud.get_all_items(db, model)
     return jsonable_encoder(data)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    # Một số thư viện yêu cầu kiểm tra check_origin
+    await websocket.accept()

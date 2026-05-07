@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Boolean, Integer, ARRAY, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from .database import Base # Import Base từ file database.py vừa tạo
+from db import Base # Import Base từ file database.py vừa tạo
 from datetime import datetime
 
 try:

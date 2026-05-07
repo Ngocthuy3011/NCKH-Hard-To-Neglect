@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from database import models
+import models
 from sqlalchemy import func
 from fastapi.encoders import jsonable_encoder
 
@@ -19,16 +19,51 @@ def create_item(db: Session, model_class, schema_data):
     return db_item
 
 #ROUTE CỦA GIẢNG VIÊN
-def get_lecturer_classes(db: Session, teacher_id: str):
-    """ Lọc danh sách lớp dựa trên tên giảng viên trong bảng Classes """
-    return db.query(
-        models.Classes.class_id,
-        models.Classes.subject_id, # Mã MH
-        models.Classes.group_id,   # Nhóm
-        models.Classes.sub_id,     # Tổ
-        models.Classes.semester    # Học kỳ
-    ).filter(models.Classes.teacher_id == teacher_id).all()
+# def get_lecturer_classes(db: Session, teacher_id: str):
+#     """ Lọc danh sách lớp dựa trên tên giảng viên trong bảng Classes """
+#     return db.query(
+#         models.Classes.class_id,
+#         models.Classes.subject_id, # Mã MH
+#         models.Classes.group_id,   # Nhóm
+#         models.Classes.sub_id,     # Tổ
+#         models.Classes.semester    # Học kỳ
+#     ).filter(models.Classes.teacher_id == teacher_id).all()
 
+# def get_lecturer_classes(db: Session, teacher_id: str):
+#     """ Lấy toàn bộ object của lớp học thay vì chỉ lấy các cột lẻ tẻ """
+#     return db.query(models.Classes).filter(models.Classes.teacher_id == teacher_id).all()
+
+def get_lecturer_classes(db: Session, teacher_id: str):
+    """ 
+    Truy xuất danh sách lớp kèm theo tên môn học bằng cách JOIN với bảng Subjects 
+    """
+    results = db.query(
+        models.Classes,
+        models.Subject.subject_name # Lấy thêm tên môn học
+    ).join(
+        models.Subject, 
+        models.Classes.subject_id == models.Subject.subject_id
+    ).filter(
+        models.Classes.teacher_id == teacher_id
+    ).all()
+
+    # Chuyển đổi kết quả thành danh sách dict để dễ xử lý ở Frontend
+    classes_with_names = []
+    for row in results:
+        cls_obj = row[0] # Đối tượng Classes
+        subject_name = row[1] # Tên môn học lấy từ bảng Subjects
+        
+        # Tạo một dict chứa đầy đủ thông tin
+        classes_with_names.append({
+            "class_id": cls_obj.class_id,
+            "subject_id": cls_obj.subject_id,
+            "subject_name": subject_name,
+            "group_id": cls_obj.group_id,
+            "sub_id": cls_obj.sub_id,
+            "semester": cls_obj.semester
+        })
+        
+    return classes_with_names
 #Hàm trả về danh sách sinh viên điểm danh trong buổi học
 def get_attendance_detail_by_session(db: Session, class_id: int, session_no: int):
     """
@@ -85,7 +120,25 @@ def get_class_attendance_summary(db: Session, class_id: int):
         models.Students.student_id, models.Account.full_name
     ).all()
 
-    return query
+    summary = []
+    for row in query:
+        present_count = int(row.present_count or 0)
+        absent_count = int(row.absent_count or 0)
+        late_count = int(row.late_count or 0)
+        total_count = present_count + absent_count + late_count
+        attendance_rate = f"{round((present_count / total_count) * 100)}%" if total_count > 0 else "0%"
+
+        summary.append({
+            "student_id": row.student_id,
+            "full_name": row.full_name,
+            "present_count": present_count,
+            "absent_count": absent_count,
+            "late_count": late_count,
+            "total_count": total_count,
+            "attendance_rate": attendance_rate,
+        })
+
+    return summary
 
 #ROUTE CỦA SINH VIÊN
 def get_student_enrolled_classes(db: Session, student_id: str):

@@ -1,3 +1,4 @@
+from fastapi.encoders import jsonable_encoder
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware # Nhớ import thư viện này
@@ -6,6 +7,8 @@ from typing import List
 import psycopg2 
 import os
 import sys
+
+from database import crud
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
@@ -148,31 +151,46 @@ async def check_attendance_ai(data: dict, db: Session = Depends(get_db)):
         print(f"🔥 LỖI HỆ THỐNG SẬP TẠI BƯỚC NÀO ĐÓ: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/api/classes")
-async def get_all_classes(db: Session = Depends(get_db)):
-    try:
-        classes_data = db.query(Classes).all()
+# @app.get("/api/classes")
+# async def get_all_classes(db: Session = Depends(get_db)):
+#     try:
+#         classes_data = db.query(Classes).all()
         
-        result = []
-        for c in classes_data:
-            if c.teacher_rel and c.teacher_rel.account:
-                t_name = c.teacher_rel.account.full_name
-            else:
-                t_name = "Chưa phân công"
-            result.append({
-                "class_id": c.class_id,
-                "subject_id": c.subject_id,
-                "group_id": c.group_id,
-                "sub_id": c.sub_id,
-                "teacher_name": t_name, 
-                "semester": c.semester
-            })
+#         result = []
+#         for c in classes_data:
+#             if c.teacher_rel and c.teacher_rel.account:
+#                 t_name = c.teacher_rel.account.full_name
+#             else:
+#                 t_name = "Chưa phân công"
+#             result.append({
+#                 "class_id": c.class_id,
+#                 "subject_id": c.subject_id,
+#                 "group_id": c.group_id,
+#                 "sub_id": c.sub_id,
+#                 "teacher_name": t_name, 
+#                 "semester": c.semester
+#             })
             
-        return {"status": "success", "data": result}
+#         return {"status": "success", "data": result}
+#     except Exception as e:
+#         print(f"Lỗi truy vấn DB: {e}")
+#         return {"status": "error", "message": str(e)}
+
+@app.get("/api/classes")
+async def get_all_classes(teacher_id: str = "2025001", db: Session = Depends(get_db)):
+    try:
+        # Sử dụng chính hàm CRUD mà Hiền đã tạo ở file kia
+        # Giả sử crud đã được import vào file này
+        classes = crud.get_lecturer_classes(db, teacher_id=teacher_id)
+        
+        # Nếu muốn trả về định dạng "success" như cũ cho Frontend không bị lỗi
+        return {
+            "status": "success", 
+            "data": jsonable_encoder(classes)
+        }
     except Exception as e:
         print(f"Lỗi truy vấn DB: {e}")
         return {"status": "error", "message": str(e)}
-
 # ==========================================
 # 4. API LẤY DANH SÁCH SINH VIÊN THEO LỚP
 # ==========================================

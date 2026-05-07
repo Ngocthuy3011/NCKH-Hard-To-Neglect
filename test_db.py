@@ -137,7 +137,7 @@ def test_stats():
         db.close() # Luôn đóng kết nối sau khi test xong
 
 if __name__ == "__main__":
-    # test_classes()
+    test_classes()
     # test_summary()
     # test_session_detail()
-    test_stats()
+    # test_stats()
