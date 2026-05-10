@@ -1,7 +1,0 @@
-pip install uvicorn
-python -m uvicorn app:app --reload
-cd database
-docker compose up -d
-docker compose ps
-
-

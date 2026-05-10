@@ -1,0 +1,97 @@
+.history-container {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 25px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin-top: 20px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.semester-select {
+  padding: 10px 15px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e0;
+  background: white;
+  font-size: 16px;
+  color: #2d3748;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Danh sách các môn học */
+.subject-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.subject-card {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  display: grid;
+  grid-template-columns: 2fr 3fr 1fr;
+  align-items: center;
+  gap: 20px;
+  transition: transform 0.2s;
+}
+
+.subject-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+}
+
+.subject-info h3 { margin: 0 0 5px 0; color: #1a365d; font-size: 18px; }
+.subject-info p { margin: 0; color: #718096; font-size: 14px; }
+
+/* Thanh Tiến độ (Progress Bar) */
+.progress-wrapper {
+  width: 100%;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #4a5568;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.progress-bg {
+  width: 100%;
+  height: 10px;
+  background-color: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 1s ease-in-out;
+}
+
+/* Màu sắc theo tỷ lệ */
+.good-rate { background-color: #48bb78; } /* Xanh lá: Tốt */
+.warn-rate { background-color: #ed8936; } /* Cam: Cảnh báo */
+.bad-rate { background-color: #e53e3e; }  /* Đỏ: Nguy hiểm */
+
+.status-badge {
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.status-pass { background: #c6f6d5; color: #22543d; }
+.status-fail { background: #fed7d7; color: #822727; }

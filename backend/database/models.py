@@ -144,6 +144,3 @@ class Attendance(Base):
 
     #Mối quan hệ giúp truy xuất dữ liệu thông minh
     student = relationship("Students", back_populates="attendances")
-
-
-
