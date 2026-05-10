@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, WebSocket, HTTPException
+from fastapi import FastAPI, Depends, WebSocket, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
@@ -40,6 +40,38 @@ def read_attendance_by_session(class_id: int, session_no: int, db: Session = Dep
     """Chi tiết điểm danh của một buổi học cụ thể"""
     details = crud.get_attendance_detail_by_session(db, class_id, session_no)
     return jsonable_encoder(details)
+
+@app.get("/class/{class_id}/students")
+def read_class_students(class_id: int, db: Session = Depends(get_db)):
+    """Danh sách sinh viên của một lớp"""
+    students = crud.get_class_students(db, class_id=class_id)
+    return jsonable_encoder(students)
+
+@app.post("/class")
+def create_class(class_data: dict = Body(...), db: Session = Depends(get_db)):
+    """Tạo mới lớp học và có thể thêm sinh viên từ Excel"""
+    new_class = crud.create_class(db, class_data)
+    if not new_class:
+        raise HTTPException(status_code=400, detail="Không thể tạo lớp mới")
+    if class_data.get("students"):
+        crud.bulk_create_students_and_enroll(db, new_class.class_id, class_data.get("students"))
+    return jsonable_encoder({"class": new_class, "message": "Lớp đã được tạo"})
+
+@app.put("/class/{class_id}")
+def update_class(class_id: int, update_data: dict = Body(...), db: Session = Depends(get_db)):
+    """Cập nhật thông tin lớp học"""
+    updated = crud.update_class(db, class_id, update_data)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Lớp học không tồn tại")
+    return jsonable_encoder({"class": updated, "message": "Cập nhật lớp thành công"})
+
+@app.put("/student/{student_id}")
+def update_student(student_id: str, update_data: dict = Body(...), db: Session = Depends(get_db)):
+    """Cập nhật hoặc tạo sinh viên, kèm enroll vào lớp nếu cần"""
+    student = crud.update_student(db, student_id, update_data)
+    if not student:
+        raise HTTPException(status_code=400, detail="Không thể cập nhật sinh viên")
+    return jsonable_encoder({"student": student, "message": "Cập nhật sinh viên thành công"})
 
 @app.get("/class/{class_id}/summary")
 def read_class_attendance_summary(class_id: int, db: Session = Depends(get_db)):

@@ -32,14 +32,14 @@ function LecturerLayout({ setPage, children }) {
           </div>
 
           <div onClick={() => setPage("statistics")} className="menu">
-            <AiOutlineCheckCircle className="menu-icon" /> <span>Thống kê</span>
+            <AiOutlineBarChart className="menu-icon" /> <span>Thống kê</span>
           </div>
 
           {/* <div className="menu">
             <AiOutlineBarChart className="menu-icon" /> <span>Thống kê</span>
           </div> */}
 
-          <div className="menu">
+          <div onClick={() => setPage("management")} className="menu">
             <AiOutlineSetting className="menu-icon" /> <span>Quản lý</span>
           </div>
         </div>

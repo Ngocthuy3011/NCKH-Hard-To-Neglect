@@ -22,7 +22,7 @@ import LecturerLayout from "./layouts/MainLayout";
 import Dashboard from "./lecturer/Dashboard";
 import Attendance from "./lecturer/Attendance";
 import Statistics from "./lecturer/Statistics";
-
+import ManageClass from "./lecturer/ManageClass";
 function App() {
 
   const [page, setPage] = useState("dashboard");
@@ -33,6 +33,7 @@ function App() {
       {page === "dashboard" && <Dashboard />}
       {page === "attendance" && <Attendance />}
       {page === "statistics" && <Statistics />}
+      {page === "management" && <ManageClass />}
 
     </LecturerLayout>
   );
