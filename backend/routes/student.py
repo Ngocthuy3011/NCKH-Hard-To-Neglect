@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from database.database import get_db
+from database.db import get_db
 from database.models import Enrollments, Classes, Subject, Attendance
 from utils.jwt_handler import decode_token
 

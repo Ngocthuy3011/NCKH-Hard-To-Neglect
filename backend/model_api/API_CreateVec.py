@@ -13,7 +13,7 @@ sys.path.append(parent_dir)
 
 # Đảm bảo file tên là convert.py (hoặc đổi thành processor.py tùy bạn)
 from convert import FaceProcessor 
-from database.database import engine, get_db
+from backend.database.db import engine, get_db
 from database.models import Base, Faces_embedding
 from pydantic import BaseModel
 

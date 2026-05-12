@@ -72,7 +72,7 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
             <AiOutlineBarChart className="menu-icon" /> <span>Thống kê</span>
           </div>
 
-          <div className="menu">
+          <div onClick={() => setPage("management")} className="menu">
             <AiOutlineSetting className="menu-icon" /> <span>Quản lý</span>
           </div>
         </div>

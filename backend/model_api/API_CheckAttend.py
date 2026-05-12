@@ -11,7 +11,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 from convert import FaceProcessor 
-from database.database import get_db
+from backend.database.db import get_db
 from database.models import Base, Faces_embedding, Classes, Students, Enrollments, Account
 
 from attendance import attendance_auto

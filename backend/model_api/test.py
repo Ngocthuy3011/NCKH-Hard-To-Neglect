@@ -7,7 +7,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from database.database import SessionLocal
+from backend.database.db import SessionLocal
 from database import models, crud
 
 # 1. Khởi tạo session kết nối database
