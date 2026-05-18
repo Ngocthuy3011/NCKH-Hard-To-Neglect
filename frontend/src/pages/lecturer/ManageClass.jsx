@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './ManageClass.css';
 import * as XLSX from 'xlsx';
+import { AiOutlineEdit, AiOutlineDelete } from "react-icons/ai";
 
 const ManageClass = () => {
   const [selectedClass, setSelectedClass] = useState(null);
@@ -28,8 +29,6 @@ const ManageClass = () => {
     full_name: '',
     class_name: ''
   });
-
-  const teacherId = "2025001"; // Thay bằng teacher_id thật của giảng viên
 
   const fetchClasses = async () => {
     setLoadingClasses(true);
@@ -324,8 +323,14 @@ const ManageClass = () => {
                     <td>{item.sub_id || '-'}</td>
                     <td>{item.semester}</td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      <button className="btn-edit" onClick={() => handleEditClass(item)}>Sửa</button>
-                      <button className="btn-delete" onClick={() => handleDeleteClass(item.class_id)}>Xóa</button>
+                      {/* <button className="btn-edit" onClick={() => handleEditClass(item)}>Sửa</button>
+                      <button className="btn-delete" onClick={() => handleDeleteClass(item.class_id)}>Xóa</button> */}
+                      <button className="btn-icon-edit" onClick={() => handleEditClass(item)} title="Chỉnh sửa">
+                      <AiOutlineEdit size={18} />
+                    </button>
+                    <button className="btn-icon-delete" onClick={() => handleDeleteClass(item.class_id)} title="Xóa">
+                      <AiOutlineDelete size={18} />
+                    </button>
                     </td>
                   </tr>
                 ))
@@ -364,8 +369,12 @@ const ManageClass = () => {
                     <td>{st.full_name || 'Chưa cập nhật'}</td>
                     <td>{st.class_name || '-'}</td>
                     <td>
-                      <button className="btn-edit" onClick={() => handleEditStudent(st)}>Sửa</button>
-                      <button className="btn-delete">Xóa</button>
+                      <button className="btn-icon-edit" onClick={() => handleEditStudent(st)} title="Chỉnh sửa">
+                        <AiOutlineEdit size={18} />
+                      </button>
+                      <button className="btn-icon-delete" title="Xóa">
+                        <AiOutlineDelete size={18} />
+                      </button>
                     </td>
                   </tr>
                 ))

@@ -1,6 +1,6 @@
 /* Container cho bảng */
 .stats-container {
-  padding: 16px;
+  padding: 0 8px;
 }
 
 /* Style cho bộ lọc chọn lớp */
@@ -17,7 +17,9 @@
 }
 
 .select-box {
-  width: auto;
+  width: 340px;
+  min-width: 320px;
+  max-width: 340px;
   margin-bottom: 0;
   padding: 8px 12px;
   border-radius: 6px;
@@ -25,8 +27,8 @@
   outline: none;
   color: #4e73df;
   font-weight: bold;
-  min-width: 220px;
   box-sizing: border-box;
+  white-space: normal;
 }
 
 /* Style cho bảng thống kê */
@@ -78,22 +80,13 @@
 }
 
 .search-group:first-child {
-  flex: 0 1 auto;
+  flex: 0 0 500px;
+  min-width: 500px;
 }
 
 .search-group:last-child {
   margin-left: auto;
-}
-
-.search-group span {
-  white-space: nowrap;    /* Giữ chữ không bị xuống dòng */
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.filter-section .search-group .input-search {
-  min-width: 176px;
-  width: 160px;
+  flex: 0 0 auto;
 }
 
 .search-group .select-box,
@@ -116,8 +109,114 @@
 }
 
 .search-group .select-box {
-  width: auto;
+  width: 380px;
+  min-width: 280px;
+}
+
+.search-group .input-search {
+  min-width: 220px;
+  width: 220px;
+}
+
+.search-group .select-box option {
+  white-space: normal;
+}
+
+/* Style cho bảng thống kê */
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stats-table th {
+  background-color: #1a3772; /* Màu Navy đồng bộ với Header */
+  color: white;
+  text-align: left;
+  padding: 12px;
+}
+
+.stats-table td {
+  padding: 12px;
+  /* margin-top: 0;
+  padding-top: 0;  */
+  border-bottom: 1px solid #e3e6f0;
+  color: #4a5568;
+}
+
+/* Hiệu ứng khi rê chuột vào hàng */
+.stats-table tr:hover {
+  background-color: #f8f9fc;
+}
+
+/* Gợi ý cho người dùng biết có thể nháy đúp */
+.student-name {
+  cursor: pointer;
+  color: #4e73df;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.student-name:hover {
+  text-decoration: underline;
+}
+
+.search-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.search-group:first-child {
+  flex: 0 0 440px;
+  min-width: 340px;
+}
+
+.search-group:last-child {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.search-group span {
+  white-space: nowrap;    /* Giữ chữ không bị xuống dòng */
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.search-group .select-box,
+.search-group .input-search,
+.search-group .btn-search-blue,
+.search-group .btn-search-gray {
+  height: 42px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.search-group .select-box,
+.search-group .input-search {
+  padding: 0 14px;
+}
+
+.search-group .select-box {
+  width: 460px;          /* Tăng từ 340px lên 460px (hoặc tùy ý bạn muốn dài hơn) */
+  max-width: 500px;      /* Tăng giới hạn tối đa */
+  min-width: 320px;
   margin-bottom: 0;
+}
+
+.filter-section .search-group .input-search {
+  min-width: 180px;
+  width: 220px;
 }
 
 .btn-search-blue {
@@ -133,6 +232,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  /* white-space: nowrap; */
 }
 
 .btn-search-blue:hover {
@@ -224,7 +324,7 @@
 
 .close-modal {
   position: absolute;
-  top: 18px;
+  top: 16px;
   right: 18px;
   border: none;
   background: transparent;
@@ -257,7 +357,7 @@
 }
 
 .small-note {
-  margin-top: 16px;
+  margin-top: 8px;
   margin-bottom: 8px;
   color: #4e73df;
   font-size: 14px;

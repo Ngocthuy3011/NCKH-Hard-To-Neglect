@@ -270,7 +270,7 @@ function Statistics() {
             <div className="student-detail-modal-overlay" onClick={closeStudentDetailModal}>
               <div className="student-detail-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="close-modal" onClick={closeStudentDetailModal} aria-label="Đóng cửa sổ">×</button>
-                <div className="summary-header">
+                <div className="summary-header"style={{ marginTop: '15px', marginBottom: '6px' }}>
                   <h3>Chi tiết điểm danh của {studentDetail.studentName}</h3>
                   <div className="summary-meta">MSSV: {studentDetail.studentId}</div>
                 </div>
