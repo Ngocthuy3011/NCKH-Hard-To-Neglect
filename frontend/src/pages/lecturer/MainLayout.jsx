@@ -53,7 +53,7 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
             onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.4)'}
             onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
           >
-            <AiOutlineLogout size={18} /> Thoát
+            <AiOutlineLogout size={18} /> Đăng xuất
           </button>
         </div>
       </div>

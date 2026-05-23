@@ -1,0 +1,9 @@
+pip install uvicorn
+.\venv\Scripts\activate
+uvicorn main:app --reload
+
+npm run dev 
+
+cd database
+docker compose up -d
+docker compose ps
