@@ -27,7 +27,7 @@ cd NCKH-Hard-To-Neglect
 
 ---
 
-# 🗄️ƯỚC 2: Khởi động Database (PostgreSQL)
+# BƯỚC 2: Khởi động Database (PostgreSQL)
 
 Chúng ta sẽ sử dụng Docker để chạy Database.  
 Cần đảm bảo Docker Desktop đã được mở và đang hoạt động trên máy bạn.
