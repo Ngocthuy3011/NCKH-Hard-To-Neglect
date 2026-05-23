@@ -9,7 +9,7 @@ from database.db import Base
 from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine
-
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 load_dotenv()
 
 # 🔥 ĐÃ FIX CHỖ NÀY: Gán cứng chuỗi kết nối luôn cho chắc cú!
@@ -49,3 +49,18 @@ def home():
 @app.post("/auth/logout")
 def logout(token: str = Depends(oauth2_scheme)):
     return {"message": "Logout thành công"}
+
+
+
+
+conf = ConnectionConfig(
+    MAIL_USERNAME = "your_email@gmail.com",
+    MAIL_PASSWORD = "your_app_password", # Mật khẩu ứng dụng Google
+    MAIL_FROM = "your_email@gmail.com",
+    MAIL_PORT = 587,
+    MAIL_SERVER = "smtp.gmail.com",
+    MAIL_STARTTLS = True,
+    MAIL_SSL_TLS = False,
+    USE_CREDENTIALS = True,
+    VALIDATE_CERTS = True
+)

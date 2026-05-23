@@ -24,19 +24,39 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
         </div>
 
         <div className="user-profile" style={{ display: 'flex', alignItems: 'center' }}>
-          {/* Hiển thị Tên thật của Giảng viên từ Database
-          <div className="user-info" style={{ fontWeight: 'bold' }}>
-            {user?.fullname || "Giảng viên"} */}
+          {/* Hiển thị Tên thật của Giảng viên từ Database */}
+          <div className="user-info" style={{ fontWeight: 'bold', marginRight: '15px' }}>
+            {user?.fullname || "Giảng viên"}
+          </div>
           
           <img 
             src={avatarImg} 
             alt="User Avatar" 
             className="user-avatar" 
           />
-          {/* Hiển thị Tên thật của Giảng viên từ Database */}
-          <div className="user-info">
-            {user?.fullname || "Giảng viên"}
-          </div>
+          
+          {/* Nút Đăng xuất trên thanh Header */}
+          <button 
+            onClick={handleLogout}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              color: '#fff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginLeft: '20px',
+              fontWeight: 'bold',
+              transition: 'background 0.3s'
+            }}
+            onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.4)'}
+            onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+          >
+            <AiOutlineLogout size={18} /> Đăng xuất
+          </button>
         </div>
       </div>
 

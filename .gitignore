@@ -6,3 +6,4 @@ __pycache__/
 data/*.pkl
 model_api/insightface_model/
 insightface_model/
+backend/model_api/insightface_model/

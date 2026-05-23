@@ -63,7 +63,7 @@
         // --- 1. ĐỌC MÃ LỚP TỪ URL ---
         const urlParams = new URLSearchParams(window.location.search);
         const selectedClassId = urlParams.get('class_id');
-        
+        const cutoffTime = urlParams.get('cutoff');
         const statusMsg = document.getElementById('status_msg');
         
         if (!selectedClassId) {
@@ -140,7 +140,8 @@
                         body: JSON.stringify({
                             image_base64: base64Image,
                             class_id: parseInt(selectedClassId), // Sử dụng ID lấy từ URL
-                            session_no: 1
+                            session_no: 1,
+                            cutoff_time: cutoffTime
                         })
                     })
                     .then(res => res.json())

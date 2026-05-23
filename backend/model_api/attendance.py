@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+<<<<<<< HEAD
 from database import models, crud, db
 from fastapi import FastAPI
 
@@ -8,39 +9,58 @@ app = FastAPI()  # Dòng này cực kỳ quan trọng, uvicorn tìm chữ 'app' 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+=======
+from backend.database import db
+from database import models, crud
+from datetime import datetime
+>>>>>>> f11355646163019787ab6335cec5c1f960797283
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
 # --- CỔNG 1: ĐIỂM DANH TỰ ĐỘNG (Dành cho AI của Thắng) ---
 @router.post("/auto")
-async def attendance_auto(student_code: str, class_id: int, session: int, db: Session = Depends(db.get_db)):
-    # 1. Kiểm tra xem sinh viên có trong danh sách lớp (enrollments) không
+async def attendance_auto(student_code: str, class_id: int, session: int, cutoff_time_str: str = None, db: Session = Depends(db.get_db)):
+    # 1. Kiểm tra xem sinh viên có trong danh sách lớp không
     is_enrolled = db.query(models.Enrollments).filter(
         models.Enrollments.student_id == student_code,
         models.Enrollments.class_id == class_id
     ).first()
 
-    if not is_enrolled:
-        return {"status": "error", "message": "Sinh viên không có tên trong lớp này"}
+    if not is_enrolled: return None
 
-    # 2. KIỂM TRA TRÙNG: Nếu đã có bản ghi điểm danh buổi này rồi thì dừng
+    # 2. KIỂM TRA TRÙNG
     already_checked = db.query(models.Attendance).filter(
         models.Attendance.student_id == student_code,
         models.Attendance.class_id == class_id,
-        models.Attendance.session_no == session  # Thêm dòng này để phân biệt ca sáng/chiều
+        models.Attendance.session_no == session
     ).first()
 
-    if already_checked:
-        return {"status": "info", "message": "Sinh viên này đã được điểm danh trước đó"}
+    if already_checked: return None
 
-    # 3. Nếu chưa có thì mới tiến hành điểm danh "đi học"
+    # 3. LOGIC SO SÁNH GIỜ TRỄ
+    now = datetime.now()
+    current_time_str = now.strftime("%H:%M") 
+    
+    status = "đi học"
+    if cutoff_time_str and current_time_str > cutoff_time_str:
+        status = "trễ"
+
+    # 4. LƯU VÀO DATABASE
     data_to_save = {
         "student_id": student_code,
         "class_id": class_id,
-        "status": "đi học",
-        "session_no": session
+        "status": status,
+        "session_no": session,
+        "time": now # Lưu giờ thực tế
     }
-    return crud.create_item(db, models.Attendance, data_to_save)
+    crud.create_item(db, models.Attendance, data_to_save)
+    
+    # TRẢ VỀ DICT ĐỂ WEBSOCKET BẮN LÊN MÀN HÌNH
+    return {
+        "student_id": student_code,
+        "status": status,
+        "time": current_time_str
+    }
 
 
 # --- CỔNG 2: ĐIỂM DANH THỦ CÔNG (Dành cho Giảng viên) ---
