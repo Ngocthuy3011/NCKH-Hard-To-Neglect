@@ -1,4 +1,5 @@
 import { useState } from "react";
+<<<<<<< HEAD
 
 import LecturerLayout from "./pages/lecturer/MainLayout";
 import Dashboard from "./pages/lecturer/Dashboard";
@@ -10,6 +11,13 @@ import RoleSelection from "./layouts/RoleSelection";
 import Login from "./layouts/Login";
 import Register from "./layouts/Register";
 
+=======
+import LecturerLayout from "./layouts/MainLayout";
+import Dashboard from "./lecturer/Dashboard";
+import Attendance from "./lecturer/Attendance";
+import Statistics from "./lecturer/Statistics";
+import ManageClass from "./lecturer/ManageClass";
+>>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0
 function App() {
   const [role, setRole] = useState(null); 
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
@@ -23,6 +31,7 @@ function App() {
     return <RoleSelection onSelectRole={setRole} />;
   }
 
+<<<<<<< HEAD
   if (!isLoggedIn) {
     if (authType === "login") {
       return (
@@ -48,6 +57,12 @@ function App() {
       );
     }
   }
+=======
+      {page === "dashboard" && <Dashboard />}
+      {page === "attendance" && <Attendance />}
+      {page === "statistics" && <Statistics />}
+      {page === "management" && <ManageClass />}
+>>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0
 
   if (role === "lecturer") {
     return (

@@ -105,5 +105,12 @@ def test_session_detail():
         db.close()
 
 if __name__ == "__main__":
+<<<<<<< HEAD:backend/model_api/delete/test.py
     test_summary()
     test_session_detail()
+=======
+    test_classes()
+    # test_summary()
+    # test_session_detail()
+    # test_stats()
+>>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0:test_db.py
