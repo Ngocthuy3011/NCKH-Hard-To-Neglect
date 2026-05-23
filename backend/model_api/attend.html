@@ -5,55 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danh Sách Điểm Danh Lớp Học</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: #ffffff; padding: 30px; display: flex; flex-direction: column; align-items: center; }
         h2 { color: #4CAF50; margin-bottom: 20px; }
-        
-        table {
-            width: 80%;
-            border-collapse: collapse;
-            background-color: #2d2d2d;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        th, td {
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #444;
-        }
+        table { width: 85%; border-collapse: collapse; background-color: #2d2d2d; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        th, td { padding: 15px; text-align: center; border-bottom: 1px solid #444; }
         th { background-color: #333; color: #4CAF50; font-size: 18px; }
         tr:hover { background-color: #3a3a3a; }
-        
         .status-pending { color: #ffeb3b; font-weight: bold; } 
         .status-success { color: #00e676; font-weight: bold; }
-        
-        /* Style cho các nút điều khiển */
-        .controls-wrapper {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .btn-open-cam {
-            padding: 10px 20px;
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
+        .status-late { color: #ff9800; font-weight: bold; }
+        .status-absent { color: #f44336; font-weight: bold; }
+        .controls-wrapper { display: flex; gap: 15px; align-items: center; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; }
+        select, input[type="time"] { padding: 10px; border-radius: 5px; font-size: 16px; background-color: #333; color: white; border: 1px solid #555; }
+        .btn-open-cam { padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-open-cam:hover { background-color: #1976D2; }
+        .btn-finalize { background-color: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -61,12 +27,16 @@
     <h2>Bảng Theo Dõi Điểm Danh Thời Gian Thực</h2>
     
     <div class="controls-wrapper">
-        <label for="class_select" style="font-weight: bold; font-size: 18px; color: #00e5ff;">Chọn lớp học: </label>
-        <select id="class_select" style="padding: 10px; border-radius: 5px; font-size: 16px; background-color: #333; color: white;">
-            <option value="">-- Đang tải dữ liệu... --</option>
-        </select>
-        
-        <button class="btn-open-cam" onclick="openCameraPopup()">📸 Bật Camera Điểm Danh</button>
+        <label style="font-weight: bold; color: #00e5ff;">Lớp học: </label>
+        <select id="class_select"><option value="">-- Đang tải dữ liệu... --</option></select>
+
+        <label style="color: #ff9800; font-weight: bold;">Chốt trễ: </label>
+        <input type="time" id="cutoff_time" value="07:30">
+
+        <button class="btn-open-cam" onclick="openCameraPopup()">📸 Camera (Cá nhân)</button>
+        <input type="file" id="group_image_upload" accept="image/*" style="display: none;" onchange="uploadGroupImage(event)">
+        <button class="btn-open-cam" style="background-color: #9C27B0;" onclick="document.getElementById('group_image_upload').click()">🖼️ Tải Ảnh (Tập thể)</button>
+        <button class="btn-finalize" onclick="finalizeAttendance()">🚩 Chốt Vắng</button>
     </div>
 
     <table>
@@ -75,47 +45,51 @@
                 <th>STT</th>
                 <th>MSSV</th>
                 <th>Họ và Tên</th>
+                <th>Giờ Vào</th>
                 <th>Trạng Thái</th>
             </tr>
         </thead>
-        <tbody id="student_table_body"></tbody>
+        <tbody id="student_table_body">
+            <tr><td colspan="5">Vui lòng chọn một lớp học để xem danh sách.</td></tr>
+        </tbody>
     </table>
 
     <script>
-        // --- WEBSOCKET XỬ LÝ ĐỔI MÀU BẢNG KHI CÓ NGƯỜI QUÉT MẶT ---
         const ws = new WebSocket("ws://localhost:8000/ws");
-        ws.onopen = () => console.log("🟢 Đã kết nối Websocket tới Bảng danh sách.");
         ws.onmessage = function(event) {
-            if (event.data.startsWith("ATTENDANCE_SUCCESS:")) {
-                const mssv = event.data.split(":")[1]; 
+            const data = JSON.parse(event.data);
+            if (data.type === "ATTENDANCE_SUCCESS") {
+                const mssv = data.student_id;
+                const timeCell = document.getElementById(`time_${mssv}`);
                 const statusCell = document.getElementById(`status_${mssv}`);
+                const row = document.getElementById(`tr_${mssv}`);
                 if (statusCell) {
-                    statusCell.innerText = "✅ Đã điểm danh";
-                    statusCell.className = "status-success"; 
-                    const row = document.getElementById(`tr_${mssv}`);
-                    row.style.backgroundColor = "#1b5e20"; 
-                    setTimeout(() => { row.style.backgroundColor = ""; }, 1000);
+                    timeCell.innerText = data.time; 
+                    statusCell.innerText = data.status === "trễ" ? "⚠️ Trễ" : "✅ Đã điểm danh";
+                    statusCell.className = data.status === "trễ" ? "status-late" : "status-success";
+                    row.style.backgroundColor = data.status === "trễ" ? "#5d4037" : "#1b5e20"; 
+                    setTimeout(() => { row.style.backgroundColor = ""; }, 2000);
                 }
+            } else if (data.type === "FINALIZE_DONE") {
+                document.querySelectorAll('.status-pending').forEach(cell => {
+                    cell.innerText = "❌ Vắng"; cell.className = "status-absent";
+                });
             }
         };
 
-        // --- HÀM TẢI LỚP TỪ DB ---
         function loadClasses() {
-            fetch('http://localhost:8000/api/classes')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const classSelect = document.getElementById('class_select');
-                        classSelect.innerHTML = '<option value="">-- Bấm vào đây để chọn lớp --</option>';
-                        data.data.forEach(cls => {
-                            const option = document.createElement('option');
-                            option.value = cls.class_id;
-                            option.textContent = `Lớp ${cls.class_id} - Môn: ${cls.subject_id} - GV: ${cls.teacher_name}`;
-                            classSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(err => console.error("Lỗi tải lớp:", err));
+            fetch('http://localhost:8000/api/classes').then(res => res.json()).then(data => {
+                if (data.status === 'success') {
+                    const classSelect = document.getElementById('class_select');
+                    classSelect.innerHTML = '<option value="">-- Bấm vào đây để chọn lớp --</option>';
+                    data.data.forEach(cls => {
+                        const option = document.createElement('option');
+                        option.value = cls.class_id;
+                        option.textContent = `Lớp ${cls.class_id} - Môn: ${cls.subject_id} - GV: ${cls.teacher_name}`;
+                        classSelect.appendChild(option);
+                    });
+                }
+            });
         }
         document.addEventListener('DOMContentLoaded', loadClasses);
 
@@ -124,56 +98,72 @@
 
         classSelectDropdown.addEventListener('change', function() {
             const classId = this.value;
-            
             studentTableBody.innerHTML = ''; 
-
             if (!classId) return; 
-
-            studentTableBody.innerHTML = '<tr><td colspan="4">Đang tải danh sách sinh viên...</td></tr>';
-
-            fetch(`http://localhost:8000/api/class-students/${classId}`)
-                .then(res => res.json())
-                .then(data => {
-                    studentTableBody.innerHTML = ''; // Xóa chữ đang tải
-                    
-                    if (data.status === 'success') {
-                        if (data.data.length === 0) {
-                            studentTableBody.innerHTML = '<tr><td colspan="4" style="color: yellow;">Lớp này chưa có sinh viên nào đăng ký (Enrollments).</td></tr>';
-                            return;
-                        }
-
-                        // Duyệt qua mảng sinh viên và tạo thẻ <tr> in ra bảng
-                        data.data.forEach(student => {
-                            const tr = document.createElement('tr');
-                            tr.id = `tr_${student.student_id}`; // Đặt ID để Lát nữa Websocket tìm đúng người đổi màu
-                            
-                            tr.innerHTML = `
-                                <td>${student.stt}</td>
-                                <td>${student.student_id}</td>
-                                <td>${student.full_name}</td>
-                                <td class="status-pending" id="status_${student.student_id}">Chưa điểm danh</td>
-                            `;
-                            studentTableBody.appendChild(tr);
-                        });
-                    } else {
-                        studentTableBody.innerHTML = `<tr><td colspan="4" style="color: red;">Lỗi: ${data.message}</td></tr>`;
+            studentTableBody.innerHTML = '<tr><td colspan="5">Đang tải danh sách sinh viên...</td></tr>';
+            fetch(`http://localhost:8000/api/class-students/${classId}`).then(res => res.json()).then(data => {
+                studentTableBody.innerHTML = '';
+                if (data.status === 'success') {
+                    if (data.data.length === 0) {
+                        studentTableBody.innerHTML = '<tr><td colspan="5" style="color: yellow;">Lớp này chưa có sinh viên.</td></tr>';
+                        return;
                     }
-                })
-                .catch(err => {
-                    console.error("Lỗi tải sinh viên:", err);
-                    studentTableBody.innerHTML = '<tr><td colspan="4" style="color: red;">Không thể kết nối máy chủ!</td></tr>';
-                });
+                    data.data.forEach(student => {
+                        const tr = document.createElement('tr');
+                        tr.id = `tr_${student.student_id}`; 
+                        tr.innerHTML = `
+                            <td>${student.stt}</td>
+                            <td>${student.student_id}</td>
+                            <td>${student.full_name}</td>
+                            <td id="time_${student.student_id}">--:--</td>
+                            <td class="status-pending" id="status_${student.student_id}">Chưa điểm danh</td>
+                        `;
+                        studentTableBody.appendChild(tr);
+                    });
+                }
+            });
         });
 
-        // --- HÀM BẬT POPUP CAMERA ---
         function openCameraPopup() {
-            const selectedClassId = document.getElementById('class_select').value;
-            if (!selectedClassId) {
-                alert("⚠️ Yêu cầu: Vui lòng chọn một lớp học trước khi bật Camera điểm danh!");
-                return;
+            const classId = document.getElementById('class_select').value;
+            const cutoff = document.getElementById('cutoff_time').value;
+            if (!classId) return alert("⚠️ Vui lòng chọn lớp!");
+            window.open(`camera.html?class_id=${classId}&cutoff=${cutoff}`, 'Cam', 'width=850,height=750');
+        }
+
+        function uploadGroupImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const classId = document.getElementById('class_select').value;
+            const cutoff = document.getElementById('cutoff_time').value;
+            if (!classId) { alert("⚠️ Vui lòng chọn lớp học!"); event.target.value = ""; return; }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                alert("⏳ Đang gửi ảnh tập thể lên Server xử lý...");
+                fetch('http://localhost:8000/api/check-attendance-group', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_base64: e.target.result, class_id: parseInt(classId), session_no: 1, cutoff_time: cutoff })
+                }).then(res => res.json()).then(data => {
+                    if (data.status === 'success') alert(`✅ Đã nhận diện ${data.recognized_count} sinh viên.`);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function finalizeAttendance() {
+            const classId = classSelectDropdown.value;
+            if (!classId) return alert("Vui lòng chọn lớp!");
+            if (confirm("Chốt danh sách và đánh VẮNG cho những sinh viên còn lại?")) {
+                fetch(`http://localhost:8000/attendance/finalize/${classId}?session=1`, { method: 'POST' })
+                .then(res => res.json()).then(data => {
+                    alert(data.message);
+                    document.querySelectorAll('.status-pending').forEach(cell => {
+                        cell.innerText = "❌ Vắng"; cell.className = "status-absent";
+                    });
+                });
             }
-            // Mở màn hình camera dưới dạng Popup độc lập, truyền tham số class_id vào URL
-            window.open(`camera.html?class_id=${selectedClassId}`, 'CameraPopup', 'width=850,height=750,resizable=no,scrollbars=no');
         }
     </script>
 </body>

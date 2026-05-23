@@ -11,7 +11,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 from convert import FaceProcessor 
-from database.database import get_db
+from backend.database.db import get_db
 from database.models import Base, Faces_embedding, Classes, Students, Enrollments, Account
 
 from attendance import attendance_auto
@@ -72,7 +72,7 @@ async def check_attendance_ai(data: dict, db: Session = Depends(get_db)):
     image_b64 = data.get("image_base64")
     class_id = data.get("class_id")
     session_no = data.get("session_no")
-
+    cutoff_time = data.get("cutoff_time")
     try:
         print("\n\n--- BƯỚC 1: ĐÃ NHẬN ĐƯỢC ẢNH TỪ CAMERA ---")
         
@@ -123,18 +123,25 @@ async def check_attendance_ai(data: dict, db: Session = Depends(get_db)):
             if distance < 0.4: # Ngưỡng chấp nhận AI
                 print("✅ BƯỚC 4: ĐIỂM SỐ ĐẠT CHUẨN (<0.4). TIẾN HÀNH ĐIỂM DANH!")
                 
-                # 1. BẮN TÍN HIỆU WEBSOCKET SANG TRANG ATTEND.HTML (Đây là dòng quyết định đổi màu!)
-                await manager.broadcast(f"ATTENDANCE_SUCCESS:{student_id}")
                 
                 # 2. Ghi vào CSDL (Nếu bạn đã import hàm attendance_auto thì bỏ dấu # ở dòng dưới đi nhé)
-                # db_result = await attendance_auto(student_id, class_id, session_no, db)
+                db_result = await attendance_auto(student_id, class_id, session_no, cutoff_time, db)
                 
                 # 3. Trả về màu XANH cho Camera Popup
+                if db_result:
+                    import json
+                    await manager.broadcast(json.dumps({
+                        "type": "ATTENDANCE_SUCCESS",
+                        "student_id": db_result["student_id"],
+                        "time": db_result["time"],
+                        "status": db_result["status"]
+                    }))
+                
+                # 3. Trả về cho Camera Popup
                 return {
                     "status": "success", 
                     "student_id": student_id,
-                    "color": "green", 
-                    "message": "Điểm danh thành công"
+                    "color": "green"
                 }
             else:
                 print("⚠️ BƯỚC 4: TÌM THẤY NGƯỜI NHƯNG KHÔNG GIỐNG LẮM (>0.4). BỎ QUA!")
@@ -147,7 +154,77 @@ async def check_attendance_ai(data: dict, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"🔥 LỖI HỆ THỐNG SẬP TẠI BƯỚC NÀO ĐÓ: {str(e)}")
         return {"status": "error", "message": str(e)}
+# ==========================================
+# 3. API ĐIỂM DANH CHẾ ĐỘ 2 (ẢNH TẬP THỂ)
+# ==========================================
+@app.post("/api/check-attendance-group")
+async def check_attendance_group(data: dict, db: Session = Depends(get_db)):
+    image_b64 = data.get("image_base64")
+    class_id = data.get("class_id")
+    session_no = data.get("session_no", 1)
+    cutoff_time = data.get("cutoff_time")
 
+    try:
+        print("\n--- BƯỚC 1: ĐANG XỬ LÝ ẢNH TẬP THỂ ---")
+        
+        # YÊU CẦU: Bạn cần có một hàm trả về DANH SÁCH các vector (nhiều khuôn mặt)
+        # Ví dụ tên hàm là get_multiple_embeddings
+        face_vectors_list = face_tool.get_multiple_embeddings(image_b64) 
+        
+        if not face_vectors_list or len(face_vectors_list) == 0:
+            return {"status": "fail", "message": "Không tìm thấy khuôn mặt nào trong ảnh!"}
+
+        print(f"✅ BƯỚC 2: AI ĐÃ TÌM THẤY {len(face_vectors_list)} KHUÔN MẶT TRONG ẢNH!")
+        
+        conn = psycopg2.connect(DB_URL)
+        cur = conn.cursor()
+        recognized_count = 0
+
+        # Vòng lặp: Lấy từng khuôn mặt trong ảnh để đi so sánh
+        for current_vector in face_vectors_list:
+            vector_str = f"[{','.join(map(str, current_vector))}]"
+            
+            search_query = """
+                SELECT student_id, 
+                       LEAST(
+                           COALESCE((vector_straight <=> %s::vector), 2.0),
+                           COALESCE((vector_left <=> %s::vector), 2.0),
+                           COALESCE((vector_right <=> %s::vector), 2.0)
+                       ) as distance 
+                FROM faces_embedding 
+                ORDER BY distance ASC 
+                LIMIT 1;
+            """
+            cur.execute(search_query, (vector_str, vector_str, vector_str))
+            result = cur.fetchone()
+
+            if result:
+                student_id, distance = result
+                if distance < 0.4:  # Ngưỡng chấp nhận
+                    # Lưu vào Database
+                    res = await attendance_auto(student_id, class_id, session_no, cutoff_time, db)
+                    
+                    # Nếu lưu thành công (chưa điểm danh trước đó)
+                    if res:
+                        recognized_count += 1
+                        import json
+                        # Bắn Websocket để giao diện đổi màu hàng loạt
+                        await manager.broadcast(json.dumps({
+                            "type": "ATTENDANCE_SUCCESS",
+                            "student_id": res["student_id"],
+                            "time": res["time"],
+                            "status": res["status"]
+                        }))
+
+        cur.close()
+        conn.close()
+        print(f"🎉 BƯỚC 3: ĐIỂM DANH THÀNH CÔNG {recognized_count} SINH VIÊN TỪ ẢNH TẬP THỂ!")
+        return {"status": "success", "recognized_count": recognized_count}
+
+    except Exception as e:
+        print(f"🔥 LỖI NHẬN DIỆN TẬP THỂ: {str(e)}")
+        return {"status": "error", "message": str(e)}
+    
 @app.get("/api/classes")
 async def get_all_classes(db: Session = Depends(get_db)):
     try:

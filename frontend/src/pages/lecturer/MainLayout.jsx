@@ -19,21 +19,23 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
   return (
     <div className="wrapper">
       <div className="header">
-        <div className="system-name">
-          ĐIỂM DANH BẰNG<br></br> NHẬN DIỆN KHUÔN MẶT
+        <div className="system-name" style={{ fontWeight: 'bold', fontSize: '24px' }}>
+          HỆ THỐNG ĐIỂM DANH 
         </div>
 
         <div className="user-profile" style={{ display: 'flex', alignItems: 'center' }}>
           {/* Hiển thị Tên thật của Giảng viên từ Database */}
-          <div className="user-info" style={{ marginRight: '15px', fontWeight: 'bold' }}>
+          <div className="user-info" style={{ fontWeight: 'bold', marginRight: '15px' }}>
             {user?.fullname || "Giảng viên"}
           </div>
+          
           <img 
             src={avatarImg} 
             alt="User Avatar" 
             className="user-avatar" 
           />
-          {/* Nút Đăng xuất */}
+          
+          {/* Nút Đăng xuất trên thanh Header */}
           <button 
             onClick={handleLogout}
             style={{
@@ -72,8 +74,14 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
             <AiOutlineBarChart className="menu-icon" /> <span>Thống kê</span>
           </div>
 
-          <div className="menu">
+          <div onClick={() => setPage("management")} className="menu">
             <AiOutlineSetting className="menu-icon" /> <span>Quản lý</span>
+          </div>
+
+          <div className="sidebar-footer">
+            <button className="logout-button" onClick={handleLogout}>
+              <AiOutlineLogout size={18} /> Đăng xuất
+            </button>
           </div>
         </div>
 

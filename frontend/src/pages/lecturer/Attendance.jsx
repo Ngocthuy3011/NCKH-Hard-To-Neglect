@@ -1,8 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Attendance.css";
 import { AiOutlineLaptop, AiOutlineCamera } from "react-icons/ai";
+import { getCurrentUser } from "../../utils/jwt";
+
 function Attendance() {
   const [selectedDevice, setSelectedDevice] = useState("laptop");
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSession, setSelectedSession] = useState("");
+  const [loading, setLoading] = useState(true);
+  const user = getCurrentUser();
+  const teacherId = user ? user.mssv : null;
+
+  useEffect(() => {
+    if (!teacherId) {
+      setLoading(false);
+      return;
+    }
+    const fetchClasses = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/lecturer/${teacherId}/classes`);
+        if (response.ok) {
+          const data = await response.json();
+          setClasses(data);
+        } else {
+          console.error("Lỗi tải lớp:", response.status);
+        }
+      } catch (error) {
+        console.error("Không thể kết nối Backend:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClasses();
+  }, [teacherId]);
+
+  const handleStartAttendance = () => {
+    if (!selectedClass || !selectedSession) {
+      alert("Vui lòng chọn lớp và buổi học");
+      return;
+    }
+    // Logic để bắt đầu điểm danh, có thể gọi API hoặc chuyển trang
+    alert(`Bắt đầu điểm danh cho lớp ${selectedClass}, buổi ${selectedSession}`);
+  };
 
   return (
     <div className="attendance-wrapper">
@@ -17,19 +57,23 @@ function Attendance() {
         <div className="selection-group">
           <div className="input-item">
             <label>Danh sách lớp</label>
-            <select>
-              <option>Chọn lớp học</option>
-              <option>Cấu trúc dữ liệu và giải thuật</option>
-              <option>Công nghệ phần mềm</option>
+            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+              <option value="">Chọn lớp học</option>
+              {classes.map(cls => (
+                <option key={cls.class_id} value={cls.class_id}>
+                  {`${cls.subject_id} - ${cls.subject_name} - Nhóm ${cls.group_id}${cls.sub_id ? ` - Tổ ${cls.sub_id}` : ""} - HK ${cls.semester}`}
+                  </option>
+              ))}
             </select>
           </div>
 
           <div className="input-item">
             <label>Buổi học</label>
-            <select>
-              <option>Chọn buổi học</option>
-              <option>Buổi 1</option>
-              <option>Buổi 2</option>
+            <select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)}>
+              <option value="">Chọn buổi học</option>
+              <option value="1">Buổi 1</option>
+              <option value="2">Buổi 2</option>
+              <option value="3">Buổi 3</option>
             </select>
           </div>
         </div>
@@ -56,11 +100,10 @@ function Attendance() {
         </div>
         
         <div className="button-container">
-          <button className="start-btn-large">
+          <button className="start-btn-large" onClick={handleStartAttendance}>
             Bắt đầu Camera & Điểm danh
           </button>
         </div>
-        {/* <button className="start-btn">Bắt đầu</button> */}
       </div>
     </div>
   );

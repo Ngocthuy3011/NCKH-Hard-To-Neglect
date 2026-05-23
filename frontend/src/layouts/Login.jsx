@@ -29,6 +29,7 @@ function Login({ role, onLoginSuccess, onSwitchToRegister, onBack }) {
       if (response.ok) {
         // Lưu token vào ví (localStorage) để mốt gọi API Điểm danh
         localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         
         // Đẩy thông tin user vừa lấy được từ Backend lên cho App.jsx
         onLoginSuccess(data.user);

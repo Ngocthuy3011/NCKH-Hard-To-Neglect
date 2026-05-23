@@ -5,7 +5,7 @@ from passlib.hash import bcrypt
 from pydantic import BaseModel
 
 from utils.jwt_handler import create_access_token, decode_token, BLACKLIST
-from database.database import get_db
+from database.db import get_db
 # Gộp chung import các model vào 1 dòng cho gọn gọn gàng
 from database.models import Account, Students, Teachers 
 

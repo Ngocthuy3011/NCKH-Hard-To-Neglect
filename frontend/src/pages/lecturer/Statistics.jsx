@@ -26,7 +26,12 @@ function Statistics() {
     setLoadingClasses(true);
     setShowClassList(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/lecturer/${teacherId}/classes`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://127.0.0.1:8000/lecturer/classes`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -182,7 +187,7 @@ function Statistics() {
             <option value="">-- Chọn lớp --</option>
             {classList.map(c => (
               <option key={c.class_id} value={c.class_id}>
-                {`${c.subject_id} - ${c.subject_name} - Nhóm ${c.group_id}${c.sub_id ? ` - Tổ ${c.sub_id}` : ""} - HK ${c.semester}`}              </option>
+                {`${c.subject_id} - ${c.subject_name} - Nhóm ${c.group_id}${c.sub_id ? ` - Tổ ${c.sub_id}` : ""} - HK ${c.semester}`}</option>
             ))}
           </select>
 
@@ -265,7 +270,7 @@ function Statistics() {
             <div className="student-detail-modal-overlay" onClick={closeStudentDetailModal}>
               <div className="student-detail-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="close-modal" onClick={closeStudentDetailModal} aria-label="Đóng cửa sổ">×</button>
-                <div className="summary-header">
+                <div className="summary-header"style={{ marginTop: '15px', marginBottom: '6px' }}>
                   <h3>Chi tiết điểm danh của {studentDetail.studentName}</h3>
                   <div className="summary-meta">MSSV: {studentDetail.studentId}</div>
                 </div>

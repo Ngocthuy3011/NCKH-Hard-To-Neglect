@@ -46,6 +46,32 @@ html, body, #root {
   overflow-y: auto;
 }
 
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 15px;
+}
+
+.logout-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.logout-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(2px);
+}
+
 .menu {
   padding: 12px 15px;
   margin-top: 8px;
@@ -103,20 +129,23 @@ html, body, #root {
   border-bottom: 2px solid rgba(0,0,0,0.1);
 }
 .system-name {
-  text-align: center;            /* QUAN TRỌNG: Căn giữa dòng 1 và dòng 2 với nhau */
-  /* font-size: 1.1rem; */
-  transform: translateX(-5%);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
   font-size: 1.1rem;
   font-weight: bold;
   line-height: 1.3;
+  size: 24px;
   text-transform: uppercase;
-  color: rgb(255, 255, 255)
+  color: rgb(255, 255, 255);
 }
 
 .user-profile {
     display: flex;
     align-items: center;
-    gap: 16px; /* Khoảng cách giữa tên và ảnh */
+    gap: 8px; /* Khoảng cách giữa tên và ảnh */
 }
 
 .user-info {

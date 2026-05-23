@@ -3,8 +3,9 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware # Thêm thư viện CORS
 from routes.auth import router as auth_router
 from routes.student import router as student_router # Import router của Sinh viên vừa tạo
+from routes.teacher import router as teacher_router
 # from routes.face import router as face_router  <-- Tạm tắt để tránh lỗi thiếu file AI
-from database.database import Base
+from database.db import Base
 from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine
@@ -34,6 +35,9 @@ app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 
 # KÍCH HOẠT API CỦA SINH VIÊN VỪA TẠO
 app.include_router(student_router, prefix="/api", tags=["Student API"])
+
+# KÍCH HOẠT API CỦA GIẢNG VIÊN
+app.include_router(teacher_router, prefix="", tags=["Teacher API"])
 
 # app.include_router(face_router, prefix="/face", tags=["Face"]) <-- Tạm tắt
 
