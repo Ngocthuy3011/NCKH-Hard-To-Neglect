@@ -6,10 +6,16 @@ import Dashboard from "./pages/lecturer/Dashboard";
 import Attendance from "./pages/lecturer/Attendance";
 import Statistics from "./pages/lecturer/Statistics";
 import ManageClass from "./pages/lecturer/ManageClass";
+
+import StudentLayout from "./pages/student/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentAttendance from "./pages/student/StudentAttendance";
+import StudentStatistics from "./pages/student/StudentStatistics";
+import StudentProfile from "./pages/student/StudentProfile";
+
 import RoleSelection from "./layouts/RoleSelection";
 import Login from "./layouts/Login";
-import Register from "./layouts/Register";
+// ĐÃ XÓA: import Register from "./layouts/Register";
 
 =======
 import LecturerLayout from "./layouts/MainLayout";
@@ -19,13 +25,18 @@ import Statistics from "./lecturer/Statistics";
 import ManageClass from "./lecturer/ManageClass";
 >>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0
 function App() {
-  const [role, setRole] = useState(null); 
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
-  const [authType, setAuthType] = useState("login"); 
+  const [role, setRole] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [page, setPage] = useState("dashboard");
-  
-  // BIẾN QUAN TRỌNG: Lưu thông tin người dùng sau khi đăng nhập
-  const [user, setUser] = useState(null); 
+  const [studentPage, setStudentPage] = useState("dashboard");
+  const [user, setUser] = useState(null);
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setRole(null);
+    setUser(null);
+    localStorage.removeItem("token");
+  };
 
   if (!role) {
     return <RoleSelection onSelectRole={setRole} />;
@@ -33,29 +44,22 @@ function App() {
 
 <<<<<<< HEAD
   if (!isLoggedIn) {
-    if (authType === "login") {
-      return (
-        <Login 
-          role={role} 
-          // HỨNG DỮ LIỆU TỪ BACKEND VÀ LƯU VÀO STATE
-          onLoginSuccess={(userData) => {
-            setUser(userData);
-            setIsLoggedIn(true);
-          }} 
-          onSwitchToRegister={() => setAuthType("register")} 
-          onBack={() => { setRole(null); setAuthType("login"); }} 
-        />
-      );
-    } else {
-      return (
-        <Register 
-          role={role} 
-          onRegisterSuccess={() => setAuthType("login")} 
-          onSwitchToLogin={() => setAuthType("login")} 
-          onBack={() => { setRole(null); setAuthType("login"); }} 
-        />
-      );
-    }
+    return (
+      <Login
+        role={role}
+        onLoginSuccess={(userData) => {
+          setUser(userData);
+          setIsLoggedIn(true);
+          // BẢO MẬT TUYỆT ĐỐI: Ghi đè role bằng data chuẩn từ Backend trả về
+          // Nếu Backend báo là 'student', dù đang ở giao diện GV cũng bị bế sang trang SV
+          if (userData.role) {
+            setRole(userData.role); 
+          }
+        }}
+        // ĐÃ XÓA: onSwitchToRegister
+        onBack={() => setRole(null)}
+      />
+    );
   }
 =======
       {page === "dashboard" && <Dashboard />}
@@ -64,20 +68,28 @@ function App() {
       {page === "management" && <ManageClass />}
 >>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0
 
+  // ── Giao diện Giảng viên ──────────────────────────────
   if (role === "lecturer") {
     return (
-      <LecturerLayout setPage={setPage} user={user}>
-        {page === "dashboard" && <Dashboard />}
-        {page === "attendance" && <Attendance />}
-        {page === "statistics" && <Statistics />}
-        {page === "management" && <ManageClass />}
+      <LecturerLayout setPage={setPage} user={user} onLogout={handleLogout}>
+        {page === "dashboard"   && <Dashboard />}
+        {page === "attendance"  && <Attendance />}
+        {page === "statistics"  && <Statistics />}
+        {page === "management"  && <ManageClass />}
       </LecturerLayout>
     );
   }
 
+  // ── Giao diện Sinh viên ───────────────────────────────
   if (role === "student") {
-    // TRUYỀN DỮ LIỆU USER XUỐNG DASHBOARD
-    return <StudentDashboard user={user} onBack={() => { setIsLoggedIn(false); setRole(null); setUser(null); }} />;
+    return (
+      <StudentLayout setPage={setStudentPage} user={user} onLogout={handleLogout}>
+        {studentPage === "dashboard"  && <StudentDashboard user={user} />}
+        {studentPage === "attendance" && <StudentAttendance user={user} />}
+        {studentPage === "statistics" && <StudentStatistics user={user} />}
+        {studentPage === "profile" && <StudentProfile user={user} />}
+      </StudentLayout>
+    );
   }
 }
 

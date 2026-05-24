@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Depends
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.middleware.cors import CORSMiddleware # Thêm thư viện CORS
+from fastapi.middleware.cors import CORSMiddleware
 from routes.auth import router as auth_router
-from routes.student import router as student_router # Import router của Sinh viên vừa tạo
+from routes.student import router as student_router
 from routes.teacher import router as teacher_router
-# from routes.face import router as face_router  <-- Tạm tắt để tránh lỗi thiếu file AI
+from routes.face import router as face_router # Đã mở khóa
 from database.db import Base
 from dotenv import load_dotenv
 import os
@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 load_dotenv()
 
-# 🔥 ĐÃ FIX CHỖ NÀY: Gán cứng chuỗi kết nối luôn cho chắc cú!
+# Chuỗi kết nối Database
 DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
 engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(bind=engine)
@@ -22,7 +22,7 @@ app = FastAPI()
 # ===== BẬT CORS ĐỂ FRONTEND REACT CÓ THỂ KẾT NỐI =====
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Cho phép tất cả các cổng, bao gồm localhost:5173
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,14 +32,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # ===== KHAI BÁO CÁC ĐƯỜNG DẪN ROUTER =====
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
-
-# KÍCH HOẠT API CỦA SINH VIÊN VỪA TẠO
 app.include_router(student_router, prefix="/api", tags=["Student API"])
-
-# KÍCH HOẠT API CỦA GIẢNG VIÊN
 app.include_router(teacher_router, prefix="", tags=["Teacher API"])
-
-# app.include_router(face_router, prefix="/face", tags=["Face"]) <-- Tạm tắt
+app.include_router(face_router) # Đã mở khóa và kích hoạt AI
 
 @app.get("/")
 def home():
@@ -50,12 +45,10 @@ def home():
 def logout(token: str = Depends(oauth2_scheme)):
     return {"message": "Logout thành công"}
 
-
-
-
+# Cấu hình Mail (Chờ cấu hình thật khi test Quên mật khẩu)
 conf = ConnectionConfig(
     MAIL_USERNAME = "your_email@gmail.com",
-    MAIL_PASSWORD = "your_app_password", # Mật khẩu ứng dụng Google
+    MAIL_PASSWORD = "your_app_password", 
     MAIL_FROM = "your_email@gmail.com",
     MAIL_PORT = 587,
     MAIL_SERVER = "smtp.gmail.com",

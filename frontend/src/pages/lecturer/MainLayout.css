@@ -1,15 +1,29 @@
+/* ============================================================
+   MainLayout.css — Responsive Layout (Desktop / Tablet / Mobile)
+   Chiến lược:
+   - Desktop  (≥1024px) : Sidebar đầy đủ 232px (giữ nguyên)
+   - Tablet   (768-1023px): Sidebar thu gọn thành icon-rail 64px
+   - Mobile   (<768px)  : Sidebar → Bottom Navigation Bar chuẩn app
+   KHÔNG thay đổi bất kỳ dòng JSX nào
+   ============================================================ */
+
+/* ── Google Font ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Reset & Base ────────────────────────────────────────── */
 html, body, #root {
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 * {
-  box-sizing: border-box; /* Giúp padding không làm tăng kích thước thực tế của phần tử */
+  box-sizing: border-box;
 }
 
+/* ── Wrapper ─────────────────────────────────────────────── */
 .wrapper {
   display: flex;
   flex-direction: column;
@@ -17,21 +31,133 @@ html, body, #root {
   width: 100vw;
 }
 
-/* Layout chính: phần thân nằm dưới header cố định */
+/* ── Layout Container ────────────────────────────────────── */
 .layout {
   display: flex;
   flex: 1;
   margin-top: 72px;
   overflow: hidden;
 }
-/* 
-.sidebar {
-  width: 250px;
-  background: #1a3772;
-  color: white;
-  padding: 16px;
-} */
 
+
+/* ════════════════════════════════════════════════════════════
+   HEADER
+   ════════════════════════════════════════════════════════════ */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: #1b2783;
+  color: #f7faff;
+  padding: 0 28px;
+  z-index: 200;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Khu vực bên trái */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0; /* Cho phép co lại */
+}
+
+.school-logo {
+  height: 48px;
+  width: auto;
+  background-color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  object-fit: contain;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.system-name {
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Khu vực bên phải */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-shrink: 0;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.user-avatar-icon {
+  font-size: 40px;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  padding: 2px;
+  box-shadow: 0 0 0 2px #ffffff;
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.header-logout-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.header-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR — DESKTOP (≥1024px): Full sidebar 232px
+   ════════════════════════════════════════════════════════════ */
 .sidebar {
   position: fixed;
   top: 72px;
@@ -44,6 +170,9 @@ html, body, #root {
   flex-direction: column;
   padding: 10px;
   overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 100;
+  transition: width 0.3s ease;
 }
 
 .sidebar-footer {
@@ -65,6 +194,7 @@ html, body, #root {
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.25s ease, transform 0.25s ease;
+  white-space: nowrap;
 }
 
 .logout-button:hover {
@@ -78,90 +208,289 @@ html, body, #root {
   cursor: pointer;
   border-radius: 8px;
   transition: all 0.3s ease;
-  
-  /* Căn lề: Dùng flex để icon và chữ nằm thẳng hàng */
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Để icon bên trái, chữ bên phải */
-  gap: 12px; /* Khoảng cách giữa icon và chữ */
+  justify-content: flex-start;
+  gap: 12px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-/* Nếu bạn vẫn muốn căn phải toàn bộ cụm (icon + chữ) */
-/* .menu { justify-content: flex-end; } */
-
 .menu-icon {
-  font-size: 1.2rem; /* Kích thước icon */
-  flex-shrink: 0;   /* Không cho icon bị bóp méo */
+  font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .menu span {
   font-size: 0.95rem;
   font-weight: 500;
+  transition: opacity 0.2s ease;
 }
 
 .menu:hover {
   background: #1e2a50;
-  transform: translateX(5px); /* Hiệu ứng nhích nhẹ sang phải khi hover */
+  transform: translateX(5px);
 }
 
+/* ── Main Content — Desktop ──────────────────────────────── */
 .main {
   flex: 1;
   margin-left: 232px;
   min-height: calc(100vh - 72px);
   background: #f5f7fb;
   overflow-y: auto;
+  transition: margin-left 0.3s ease;
 }
 
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 72px;
-  background: #1b2783;
-  color: #f7faff;
-  padding: 10px 28px;
-  z-index: 100;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  border-bottom: 2px solid rgba(0,0,0,0.1);
-}
-.system-name {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: bold;
-  line-height: 1.3;
-  size: 24px;
-  text-transform: uppercase;
-  color: rgb(255, 255, 255);
-}
-
-.user-profile {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* Khoảng cách giữa tên và ảnh */
-}
-
-.user-info {
-    color: #eee8e8; /* Màu xanh Hiền thích ở các câu trước */
-    font-weight: 500;
-}
-
-.user-avatar {
-    width: 32px; /* Tăng lên một chút cho dễ nhìn */
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #2d6089;
-    background-color: #2d2d2d;
-}
 .content {
   padding: 20px;
   min-height: calc(100vh - 72px);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   TABLET (768px – 1023px): Icon-only rail, 64px
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) and (min-width: 768px) {
+
+  /* Header: thu nhỏ font tên hệ thống */
+  .system-name {
+    font-size: 17px;
+    letter-spacing: 0.4px;
+  }
+
+  .header-right {
+    gap: 14px;
+  }
+
+  .user-info {
+    display: none; /* Ẩn tên, chỉ giữ avatar */
+  }
+
+  .header-logout-btn span,
+  .header-logout-btn {
+    font-size: 13px;
+    padding: 7px 12px;
+    gap: 5px;
+  }
+
+  /* Sidebar thu gọn thành icon rail */
+  .sidebar {
+    width: 64px;
+    padding: 10px 6px;
+    align-items: center;
+  }
+
+  /* Ẩn text, chỉ còn icon */
+  .menu span {
+    display: none;
+  }
+
+  .menu {
+    justify-content: center;
+    padding: 12px;
+    gap: 0;
+    width: 100%;
+    position: relative;
+  }
+
+  /* Tooltip khi hover trên tablet */
+  .menu:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1e2a50;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .menu:hover {
+    transform: none;
+    background: #1e2a50;
+  }
+
+  .menu-icon {
+    font-size: 1.4rem;
+  }
+
+  /* Nút đăng xuất trong sidebar-footer */
+  .sidebar-footer {
+    padding: 12px 0;
+    width: 100%;
+  }
+
+  .logout-button {
+    padding: 12px;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .logout-button span,
+  .logout-button > *:not(svg):not([data-icon]) {
+    display: none;
+  }
+
+  /* Main co lại theo sidebar icon rail */
+  .main {
+    margin-left: 64px;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE (<768px): Bottom Navigation Bar
+   Sidebar dịch xuống bottom, layout xếp dọc
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── Header mobile ──────────────────────────────────────── */
+  .header {
+    height: 60px;
+    padding: 0 16px;
+  }
+
+  .layout {
+    margin-top: 60px;
+  }
+
+  .school-logo {
+    height: 36px;
+    padding: 4px 8px;
+  }
+
+  /* Ẩn tên hệ thống dài, giữ giao diện thoáng */
+  .system-name {
+    display: none;
+  }
+
+  .user-info {
+    display: none;
+  }
+
+  .header-right {
+    gap: 12px;
+  }
+
+  .user-avatar-icon {
+    font-size: 34px;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Ẩn nút Đăng xuất trên header ở mobile
+     (đã có nút tương đương trong bottom nav) */
+  .header-logout-btn {
+    display: none;
+  }
+
+  /* ── Sidebar → Bottom Navigation Bar ──────────────────── */
+  .sidebar {
+    /* Đặt lại vị trí: dưới cùng, full width */
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 65px;
+
+    /* Bố cục ngang */
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0;
+    overflow: hidden;
+    overflow-y: unset;
+
+    /* Bo góc trên */
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+
+    /* z-index cao nhất */
+    z-index: 150;
+  }
+
+  /* Mỗi menu item: icon ở trên, text nhỏ ở dưới */
+  .menu {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px;
+    margin-top: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .menu:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: none;
+  }
+
+  .menu-icon {
+    font-size: 1.4rem;
+  }
+
+  .menu span {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    display: block;
+    opacity: 0.9;
+  }
+
+  /* Ẩn sidebar-footer (nút logout) vì đã ẩn header-logout-btn riêng
+     → Nếu muốn giữ logout ở bottom nav, xoá block này */
+  .sidebar-footer {
+    display: none;
+  }
+
+  /* ── Main content: lấy lại toàn bộ chiều rộng ─────────── */
+  .main {
+    margin-left: 0;
+    /* Padding bottom để nội dung không bị che bởi bottom nav */
+    padding-bottom: 65px;
+    min-height: calc(100vh - 60px);
+  }
+
+  .content {
+    padding: 14px;
+    min-height: unset;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE NHỎ (<400px): Tinh chỉnh thêm cho màn hình rất nhỏ
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 399px) {
+
+  .menu span {
+    display: none; /* Ẩn label nếu màn hình quá nhỏ, chỉ giữ icon */
+  }
+
+  .sidebar {
+    height: 56px;
+  }
+
+  .main {
+    padding-bottom: 56px;
+  }
+
+  .menu-icon {
+    font-size: 1.5rem;
+  }
 }

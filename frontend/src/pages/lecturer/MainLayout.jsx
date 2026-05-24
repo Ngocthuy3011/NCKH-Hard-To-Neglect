@@ -1,16 +1,16 @@
 import React from 'react';
 import "./MainLayout.css";
-// Lùi 2 cấp (../../) để trỏ đúng vào thư mục assets từ trong pages/lecturer/
-import avatarImg from '../../assets/user.png'; 
+import logoImg from '../../assets/logo-tdtu.jpg'; 
 import { AiOutlineHome, AiOutlineCheckCircle, AiOutlineBarChart, AiOutlineSetting, AiOutlineLogout } from "react-icons/ai";
+import { FaUserCircle } from "react-icons/fa"; // Thêm thư viện icon chuẩn cho User
 
 function LecturerLayout({ setPage, children, user, onLogout }) {
   
   // Hàm xử lý khi bấm nút Thoát
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Xóa token đăng nhập
+    localStorage.removeItem('token'); 
     if (onLogout) {
-      onLogout(); // Gọi hàm đẩy ra màn hình chọn Role
+      onLogout(); 
     } else {
       window.location.reload(); 
     }
@@ -19,45 +19,33 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
   return (
     <div className="wrapper">
       <div className="header">
-        <div className="system-name" style={{ fontWeight: 'bold', fontSize: '24px' }}>
-          HỆ THỐNG ĐIỂM DANH 
+        
+        {/* GÓC TRÁI: Logo Trường + Tên Hệ Thống */}
+        <div className="header-left">
+          <img src={logoImg} alt="TDTU Logo" className="school-logo" />
+          <div className="system-name">
+            HỆ THỐNG NHẬN DIỆN KHUÔN MẶT
+          </div>
         </div>
 
-        <div className="user-profile" style={{ display: 'flex', alignItems: 'center' }}>
-          {/* Hiển thị Tên thật của Giảng viên từ Database */}
-          <div className="user-info" style={{ fontWeight: 'bold', marginRight: '15px' }}>
-            {user?.fullname || "Giảng viên"}
+        {/* GÓC PHẢI: Tên Giảng viên + Avatar + Nút Đăng xuất */}
+        <div className="header-right">
+          <div className="user-profile">
+            <span className="user-info">{user?.fullname || "Giảng viên"}</span>
+            
+            {/* LOGIC THÔNG MINH: Nếu có link ảnh thật thì hiện, không thì dùng Icon Vector siêu nét */}
+            {user?.avatar ? (
+              <img src={user.avatar} alt="User Avatar" className="user-avatar" />
+            ) : (
+              <FaUserCircle className="user-avatar-icon" />
+            )}
           </div>
           
-          <img 
-            src={avatarImg} 
-            alt="User Avatar" 
-            className="user-avatar" 
-          />
-          
-          {/* Nút Đăng xuất trên thanh Header */}
-          <button 
-            onClick={handleLogout}
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.5)',
-              color: '#fff',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              marginLeft: '20px',
-              fontWeight: 'bold',
-              transition: 'background 0.3s'
-            }}
-            onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.4)'}
-            onMouseOut={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
-          >
+          <button className="header-logout-btn" onClick={handleLogout}>
             <AiOutlineLogout size={18} /> Đăng xuất
           </button>
         </div>
+
       </div>
 
       <div className="layout">
@@ -76,12 +64,6 @@ function LecturerLayout({ setPage, children, user, onLogout }) {
 
           <div onClick={() => setPage("management")} className="menu">
             <AiOutlineSetting className="menu-icon" /> <span>Quản lý</span>
-          </div>
-
-          <div className="sidebar-footer">
-            <button className="logout-button" onClick={handleLogout}>
-              <AiOutlineLogout size={18} /> Đăng xuất
-            </button>
           </div>
         </div>
 

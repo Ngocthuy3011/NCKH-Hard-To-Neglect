@@ -15,7 +15,7 @@ function Statistics() {
   const [studentDetailError, setStudentDetailError] = useState("");
   const [showStudentDetailModal, setShowStudentDetailModal] = useState(false);
 
-  const teacherId = "2025001"; // Thay bằng teacher_id thật của giảng viên
+  const teacherId = "2025001"; 
 
   const handleLoadClasses = async () => {
     if (classList.length > 0) {
@@ -27,7 +27,7 @@ function Statistics() {
     setShowClassList(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://127.0.0.1:8000/lecturer/classes`, {
+      const response = await fetch('http://localhost:8000/api/classes', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -36,10 +36,18 @@ function Statistics() {
         throw new Error(`HTTP ${response.status}`);
       }
       const data = await response.json();
-      setClassList(data);
-      if (data.length === 0) {
-        alert("Giảng viên này chưa có lớp hoặc dữ liệu chưa có sẵn.");
+      
+      // ĐÃ SỬA LỖI Ở ĐÂY: Kiểm tra và bóc tách đúng mảng data từ Backend
+      if (data.status === "success" && Array.isArray(data.data)) {
+        setClassList(data.data);
+        if (data.data.length === 0) alert("Giảng viên này chưa có lớp.");
+      } else if (Array.isArray(data)) {
+        setClassList(data);
+        if (data.length === 0) alert("Giảng viên này chưa có lớp.");
+      } else {
+        setClassList([]);
       }
+
     } catch (error) {
       console.error("Không tải được danh sách lớp:", error);
       alert("Không tải được danh sách lớp. Kiểm tra backend và teacher_id.");
@@ -53,7 +61,7 @@ function Statistics() {
 
     setLoadingSummary(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/class/${selectedClass}/summary`);
+      const response = await fetch(`http://127.0.0.1:8000/api/class/${selectedClass}/summary`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -83,10 +91,16 @@ function Statistics() {
       return alert("Chưa có dữ liệu để xuất file.");
     }
 
-    const headers = ["STT", "MSSV", "Họ và Tên", "Buổi điểm danh", "Vắng", "Trễ", "Tỉ lệ chuyên cần"];
+    const headers = ["STT", "MSSV", "Họ và Tên", "Buổi điểm danh", "Vắng", "Trễ", "Tỉ lệ chuyên cần", "Đánh giá"];
     const rows = dataToExport.map((item, index) => {
       const total = (item.present_count || 0) + (item.absent_count || 0) + (item.late_count || 0);
       const attendanceRate = total > 0 ? `${Math.round(((item.present_count || 0) / total) * 100)}%` : "0%";
+      const absentRate = total === 0 ? 0 : ((item.absent_count || 0) / total) * 100;
+      
+      let warning = "Đạt";
+      if (absentRate >= 20) warning = "Cấm thi (Vắng >= 20%)";
+      else if ((item.absent_count || 0) > 0) warning = "Nhắc nhở";
+
       return [
         index + 1,
         item.student_id,
@@ -95,17 +109,32 @@ function Statistics() {
         item.absent_count || 0,
         item.late_count || 0,
         attendanceRate,
+        warning
       ]
         .map(escapeCsvValue)
         .join(",");
     });
 
-    const csvContent = [headers.map(escapeCsvValue).join(","), ...rows].join("\r\n");
+    const csvContent = "\uFEFF" + [headers.map(escapeCsvValue).join(","), ...rows].join("\r\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `thong_ke_lop_${selectedClass || "all"}.csv`);
+    
+    // --- ĐOẠN MỚI: TẠO TÊN FILE THÔNG MINH ---
+    const info = classList.find(c => String(c.class_id) === String(selectedClass));
+    let fileName = "Thong_ke_diem_danh.csv";
+    
+    if (info) {
+        // Ghép chuỗi: Mã môn + Tên môn + Nhóm
+        fileName = `${info.subject_id}_${info.subject_name}_Nhom_${info.group_id}.csv`;
+        // Chuyển các khoảng trắng thành dấu gạch dưới để tên file không bị lỗi
+        fileName = fileName.replace(/\s+/g, '_'); 
+    }
+    
+    link.setAttribute("download", fileName);
+    // ----------------------------------------
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -119,7 +148,7 @@ function Statistics() {
       return;
     }
     const filtered = attendanceSummary.filter(item =>
-      item.full_name?.toLowerCase().includes(keyword)
+      item.full_name?.toLowerCase().includes(keyword) || item.student_id?.includes(keyword)
     );
     setFilteredSummary(filtered);
   };
@@ -133,8 +162,7 @@ function Statistics() {
     setStudentDetailError("");
     setShowStudentDetailModal(true);
     try {
-      console.log("Loading student detail", studentId, selectedClass);
-      const response = await fetch(`http://127.0.0.1:8000/student/${studentId}/attendance-stats/${selectedClass}`);
+      const response = await fetch(`http://127.0.0.1:8000/api/student/${studentId}/attendance-stats/${selectedClass}`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -204,15 +232,15 @@ function Statistics() {
 
         </div>
 
-        {/* Nhóm tìm tên */}
         <div className="search-group">
-          <span>Tìm tên:</span>
+          <span>Tìm kiếm:</span>
           <input 
             type="text" 
             className="input-search" 
-            placeholder="Nhập tên sinh viên..."
+            placeholder="Nhập tên hoặc MSSV..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearchByName()}
           />
           <button className="btn-search-gray" onClick={handleSearchByName}>Lọc</button>
         </div>
@@ -244,21 +272,52 @@ function Statistics() {
                   <th>Vắng</th>
                   <th>Trễ</th>
                   <th>Tỉ lệ chuyên cần</th>
+                  <th>Đánh giá</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredSummary.map((item, index) => {
                   const total = (item.present_count || 0) + (item.absent_count || 0) + (item.late_count || 0);
                   const attendanceRate = total > 0 ? `${Math.round(((item.present_count || 0) / total) * 100)}%` : '0%';
+                  const absentRate = total === 0 ? 0 : ((item.absent_count || 0) / total) * 100;
+                  
+                  let warning = "Đạt";
+                  let badgeColor = "#d4edda";
+                  let textColor = "#155724";
+
+                  if (absentRate >= 20) {
+                    warning = "Cấm thi";
+                    badgeColor = "#f8d7da";
+                    textColor = "#721c24";
+                  } else if ((item.absent_count || 0) > 0) {
+                    warning = "Nhắc nhở";
+                    badgeColor = "#fff3cd";
+                    textColor = "#856404";
+                  }
+
                   return (
-                    <tr key={item.student_id} onDoubleClick={() => handleStudentDoubleClick(item.student_id, item.full_name)} title="Nháy đúp để xem chi tiết điểm danh">
+                    <tr key={item.student_id} onDoubleClick={() => handleStudentDoubleClick(item.student_id, item.full_name)} title="Nháy đúp để xem chi tiết điểm danh" style={{ cursor: "pointer" }}>
                       <td>{index + 1}</td>
                       <td>{item.student_id}</td>
                       <td className="student-name">{item.full_name}</td>
                       <td>{total}</td>
-                      <td>{item.absent_count || 0}</td>
+                      <td style={{ color: (item.absent_count || 0) > 0 ? 'red' : 'inherit', fontWeight: (item.absent_count || 0) > 0 ? 'bold' : 'normal' }}>
+                        {item.absent_count || 0}
+                      </td>
                       <td>{item.late_count || 0}</td>
                       <td style={{ color: attendanceRate === '100%' ? 'green' : '#6c757d', fontWeight: '600' }}>{attendanceRate}</td>
+                      <td>
+                        <span style={{
+                          padding: '4px 10px', 
+                          borderRadius: '12px', 
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          background: badgeColor,
+                          color: textColor
+                        }}>
+                          {warning}
+                        </span>
+                      </td>
                     </tr>
                   );
                 })}
@@ -281,7 +340,7 @@ function Statistics() {
                   <div className="small-note" style={{ color: '#d63333' }}>{studentDetailError}</div>
                 ) : (
                   <>
-                    <div className="small-note">Tổng buổi: {studentDetail.summary?.tổng_buổi || 0}</div>
+                    <div className="small-note" style={{marginBottom: '10px'}}>Tổng buổi: {studentDetail.summary?.tổng_buổi || 0}</div>
                     <table className="stats-table">
                       <thead>
                         <tr>
@@ -295,7 +354,12 @@ function Statistics() {
                           studentDetail.history.map((row, idx) => (
                             <tr key={`${row.session_no}-${idx}`}>
                               <td>{row.session_no}</td>
-                              <td>{row.status || 'Chưa điểm danh'}</td>
+                              <td style={{
+                                color: row.status === 'có mặt' ? 'green' : (row.status === 'vắng' ? 'red' : '#fd7e14'),
+                                fontWeight: 'bold'
+                              }}>
+                                {row.status ? (row.status.charAt(0).toUpperCase() + row.status.slice(1)) : 'Chưa điểm danh'}
+                              </td>
                               <td>{row.time ? new Date(row.time).toLocaleString() : '-'}</td>
                             </tr>
                           ))
@@ -315,7 +379,7 @@ function Statistics() {
       )}
       {!selectedClass && (
         <p style={{fontSize: '12px', color: '#858796', marginTop: '10px'}}>
-          * Chọn lớp rồi nhấn "Tìm kiếm" để hiển thị bảng thống kê.
+          * Chọn lớp rồi nhấn "Tìm kiếm" để hiển thị bảng thống kê. Nháy đúp vào một dòng để xem chi tiết.
         </p>
       )}
 
