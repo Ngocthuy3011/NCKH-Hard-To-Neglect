@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import './Auth.css';
 
-function Login({ role, onLoginSuccess, onSwitchToRegister, onBack }) {
+// ĐÃ XÓA: bỏ prop onSwitchToRegister
+function Login({ role, onLoginSuccess, onBack }) {
   // Lấy dữ liệu người dùng nhập
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +18,7 @@ function Login({ role, onLoginSuccess, onSwitchToRegister, onBack }) {
       formData.append('username', username);
       formData.append('password', password);
 
-      // Gọi API Backend (Nhớ kiểm tra cổng 8000 có đúng không nhé)
+      // Gọi API Backend
       const response = await fetch('http://localhost:8000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -77,9 +78,7 @@ function Login({ role, onLoginSuccess, onSwitchToRegister, onBack }) {
           <button type="submit" className="auth-btn">Đăng Nhập</button>
         </form>
 
-        <div className="switch-mode">
-          Chưa có tài khoản? <span onClick={onSwitchToRegister}>Đăng ký ngay</span>
-        </div>
+        {/* ĐÃ XÓA: Khối div chứa nút Đăng ký ngay */}
       </div>
     </div>
   );

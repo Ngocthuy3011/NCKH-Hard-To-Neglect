@@ -1,0 +1,244 @@
+.profile-page {
+  padding: 20px;
+  animation: fadeIn 0.4s ease;
+}
+
+.page-title {
+  color: #1b2783;
+  font-size: 22px;
+  margin-bottom: 24px;
+  font-weight: 800;
+}
+
+/* THIẾT KẾ THẺ THÔNG TIN */
+.profile-card, .face-registration-section {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.profile-card h3, .face-registration-section h3 {
+  color: #2d3748;
+  margin-top: 0;
+  margin-bottom: 16px;
+  border-left: 4px solid #00a8ff;
+  padding-left: 10px;
+  font-size: 18px;
+}
+
+.profile-card p {
+  color: #4a5568;
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+/* KHU VỰC ĐĂNG KÝ AI */
+.instruction {
+  color: #718096;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.registration-camera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.step-indicator {
+  font-size: 18px;
+  color: #2d3748;
+  margin: 0;
+}
+
+.step-indicator .highlight {
+  color: #1b2783;
+  font-weight: bold;
+  background: #ebf8ff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid #90cdf4;
+}
+
+/* KHUNG CAMERA TỰA NHƯ APPLE FACE ID */
+.webcam-container {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 50%; /* Bo tròn khung hình */
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 168, 255, 0.2);
+  border: 6px solid #00a8ff;
+  aspect-ratio: 1 / 1; /* Cắt khung hình vuông rồi bo tròn */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #edf2f7;
+}
+
+.webcam-view {
+  width: auto;
+  height: 100%;
+  min-width: 100%;
+  object-fit: cover;
+}
+
+/* NÚT BẤM */
+.btn-capture, .btn-submit-face, .btn-retry {
+  padding: 12px 28px;
+  border-radius: 25px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-capture {
+  background: linear-gradient(90deg, #1b2783, #00a8ff);
+  color: white;
+  font-size: 15px;
+  box-shadow: 0 4px 15px rgba(0, 168, 255, 0.3);
+}
+
+.btn-capture:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 168, 255, 0.4);
+}
+
+/* KHU VỰC XEM TRƯỚC (PREVIEW) */
+.registration-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.registration-preview h4 {
+  color: #48bb78;
+  font-size: 18px;
+  margin: 0;
+}
+
+.preview-grid {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.preview-grid img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #48bb78;
+  box-shadow: 0 4px 10px rgba(72, 187, 120, 0.2);
+}
+
+.btn-submit-face {
+  background: #48bb78;
+  color: white;
+  font-size: 16px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.btn-submit-face:hover:not(:disabled) {
+  background: #38a169;
+  transform: translateY(-2px);
+}
+
+.btn-submit-face:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-retry {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.btn-retry:hover {
+  background: #e2e8f0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.face-valid-status { text-align: center; padding: 20px; background: #f0fff4; border: 1px solid #9ae6b4; border-radius: 12px; }
+.valid-icon { font-size: 50px; margin-bottom: 10px; }
+.expired-warning { background: #fffaf0; color: #dd6b20; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; text-align: center;}
+
+
+/* =========================================
+   HIỆU ỨNG TICK XANH HIỆN ĐẠI (APPLE PAY STYLE)
+   ========================================= */
+.success-animation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.checkmark {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 3.5;
+  stroke: #48bb78; /* Màu xanh lá hiện đại */
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px #48bb78;
+  animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
+}
+
+.checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3.5;
+  stroke-miterlimit: 10;
+  stroke: #48bb78;
+  fill: none;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark__check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scale {
+  0%, 100% {
+    transform: none;
+  }
+  50% {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+@keyframes fill {
+  100% {
+    box-shadow: inset 0px 0px 0px 30px #e6ffed; /* Hiệu ứng nền tỏa sáng nhẹ */
+  }
+}

@@ -41,13 +41,13 @@ def get_today_schedule(mssv: str = Depends(get_current_student), db: Session = D
     schedule = []
     for enr, cls, sub in enrollments:
         schedule.append({
-            "id": sub.subject_id,
+            "id": cls.class_id,             # <-- Quan trọng: Phải lấy class_id của cls
+            "subject_id": sub.subject_id,   # Giữ lại để hiển thị mã môn nếu cần
             "name": sub.subject_name,
             "time": "07:30 - 09:30", 
             "room": "Phòng A1.01",   
             "status": "pending" 
         })
-        
     return schedule
 
 

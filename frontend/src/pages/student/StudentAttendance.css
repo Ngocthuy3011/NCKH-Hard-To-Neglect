@@ -1,0 +1,123 @@
+.attendance-page {
+  padding: 20px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.page-title {
+  color: #1b2783;
+  font-size: 20px;
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+
+.subject-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* THIẾT KẾ CARD THEO ẢNH UI */
+.subject-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* Đường viền xanh bo cong bên trái */
+.subject-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: #00a8ff; /* Màu xanh lơ (Cyan) */
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.subject-info h3 {
+  margin: 0 0 8px 0;
+  color: #1b2783;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.subject-info p {
+  margin: 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+/* NÚT ĐIỂM DANH GRADIENT BO TRÒN */
+.btn-take-attendance {
+  background: linear-gradient(90deg, #1b2783, #00a8ff);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 25px; /* Nút hình hạt đậu (Pill shape) */
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 168, 255, 0.3);
+}
+
+.btn-take-attendance:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 168, 255, 0.4);
+}
+
+.btn-take-attendance.done {
+  background: #cbd5e0;
+  box-shadow: none;
+  cursor: not-allowed;
+  color: #4a5568;
+}
+
+.btn-take-attendance.done:hover {
+  transform: none;
+}
+
+/* CSS cho Modal Camera (Giữ lại từ Dashboard) */
+.camera-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.camera-modal {
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.capture-btn { background: #48bb78; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+.cancel-btn { background: #e53e3e; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
