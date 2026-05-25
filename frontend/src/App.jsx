@@ -1,5 +1,4 @@
 import { useState } from "react";
-<<<<<<< HEAD
 
 import LecturerLayout from "./pages/lecturer/MainLayout";
 import Dashboard from "./pages/lecturer/Dashboard";
@@ -17,13 +16,6 @@ import RoleSelection from "./layouts/RoleSelection";
 import Login from "./layouts/Login";
 // ĐÃ XÓA: import Register from "./layouts/Register";
 
-=======
-import LecturerLayout from "./layouts/MainLayout";
-import Dashboard from "./lecturer/Dashboard";
-import Attendance from "./lecturer/Attendance";
-import Statistics from "./lecturer/Statistics";
-import ManageClass from "./lecturer/ManageClass";
->>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0
 function App() {
   const [role, setRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -42,7 +34,6 @@ function App() {
     return <RoleSelection onSelectRole={setRole} />;
   }
 
-<<<<<<< HEAD
   if (!isLoggedIn) {
     return (
       <Login
@@ -53,7 +44,15 @@ function App() {
           // BẢO MẬT TUYỆT ĐỐI: Ghi đè role bằng data chuẩn từ Backend trả về
           // Nếu Backend báo là 'student', dù đang ở giao diện GV cũng bị bế sang trang SV
           if (userData.role) {
-            setRole(userData.role); 
+            const r = String(userData.role).toLowerCase();
+            if (r === 'lecturer' || r.includes('lect') || r.includes('giang') || r.includes('teacher')) {
+              setRole('lecturer');
+            } else if (r === 'student' || r.includes('student') || r.includes('sv') || r.includes('sinh')) {
+              setRole('student');
+            } else {
+              // Nếu backend trả về giá trị không mong đợi, giữ role đang chọn ban đầu
+              console.warn('Unrecognized role from backend:', userData.role);
+            }
           }
         }}
         // ĐÃ XÓA: onSwitchToRegister
@@ -61,12 +60,6 @@ function App() {
       />
     );
   }
-=======
-      {page === "dashboard" && <Dashboard />}
-      {page === "attendance" && <Attendance />}
-      {page === "statistics" && <Statistics />}
-      {page === "management" && <ManageClass />}
->>>>>>> 0a5bc102cb09109128d8164ec8c6ff080bce47b0
 
   // ── Giao diện Giảng viên ──────────────────────────────
   if (role === "lecturer") {

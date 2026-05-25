@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Webcam from "react-webcam";
 import "./Attendance.css";
 import { AiOutlineLaptop, AiOutlineCamera, AiOutlineStop } from "react-icons/ai";
-import { getCurrentUser } from "../../utils/jwt";
+import { getCurrentUser, getAuthHeaders } from "../../utils/jwt";
 
 function Attendance() {
   const [selectedDevice, setSelectedDevice] = useState("laptop");
@@ -16,32 +16,41 @@ function Attendance() {
   const [isGroupMode, setIsGroupMode] = useState(false); 
   
   const [recognizedStudent, setRecognizedStudent] = useState(null);
-  const [successAlert, setSuccessAlert] = useState(""); 
+  const [successAlert, setSuccessAlert] = useState("");
+  const [recentAttendances, setRecentAttendances] = useState([]);
   
   const webcamRef = useRef(null);
   const user = getCurrentUser();
-
-  const currentId = user ? (user.username || user.mssv) : null;
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    if (!currentId) {
+    if (!token || !user) {
+      setClasses([]);
       setLoading(false);
       return;
     }
+
     const fetchClasses = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/classes`);
-        if (response.ok) {
-          const result = await response.json();
-          if (result.status === "success" && Array.isArray(result.data)) {
-            setClasses(result.data);
-          } else if (Array.isArray(result)) {
-            setClasses(result); 
-          } else {
-            setClasses([]);
+        const response = await fetch(`http://localhost:8000/lecturer/classes`, {
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json"
           }
-        } else {
+        });
+
+        if (!response.ok) {
           console.error("Lỗi tải lớp:", response.status);
+          setClasses([]);
+          return;
+        }
+
+        const result = await response.json();
+        if (Array.isArray(result)) {
+          setClasses(result);
+        } else if (result.status === "success" && Array.isArray(result.data)) {
+          setClasses(result.data);
+        } else {
           setClasses([]);
         }
       } catch (error) {
@@ -51,8 +60,9 @@ function Attendance() {
         setLoading(false);
       }
     };
+
     fetchClasses();
-  }, [currentId]);
+  }, [token, user]);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000/api/ws");
@@ -61,13 +71,23 @@ function Attendance() {
       const data = JSON.parse(event.data);
       if (data.type === "ATTENDANCE_SUCCESS") {
         const studentName = data.student_name || "Sinh viên"; // Fallback nếu điểm danh tập thể ko trả về tên
+        const attendanceRecord = {
+          name: studentName,
+          mssv: data.student_id,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
         setRecognizedStudent({
           name: studentName,
           mssv: data.student_id
         });
+        setRecentAttendances((prev) => {
+          const filtered = prev.filter(r => r.mssv !== attendanceRecord.mssv);
+          return [attendanceRecord, ...filtered].slice(0, 10);
+        });
         
-        setSuccessAlert(`🎉 Điểm danh thành công: ${studentName} (${data.student_id})`);
-        setTimeout(() => setSuccessAlert(""), 3000);
+        // setSuccessAlert(`🎉 Điểm danh thành công: ${studentName} (${data.student_id})`);
+        // setTimeout(() => setSuccessAlert(""), 3000);
         
         setTimeout(() => setRecognizedStudent(null), 4000);
       }
@@ -115,6 +135,8 @@ function Attendance() {
       alert("Vui lòng chọn lớp và buổi học");
       return;
     }
+    // Bắt đầu phiên điểm danh mới: xóa lịch sử gần nhất để chỉ hiện tên mới trong phiên này
+    setRecentAttendances([]);
     setIsCameraActive(true);
   };
 
@@ -124,15 +146,15 @@ function Attendance() {
     setSuccessAlert("");
   };
 
-  const simulateAI = () => {
-    setRecognizedStudent({
-      name: "Huỳnh Nguyễn Ngọc Thùy",
-      mssv: "52400319"
-    });
-    setSuccessAlert(`🎉 Điểm danh thành công: Huỳnh Nguyễn Ngọc Thùy (52400319)`);
-    setTimeout(() => setSuccessAlert(""), 3000);
-    setTimeout(() => setRecognizedStudent(null), 3000);
-  };
+  // const simulateAI = () => {
+  //   setRecognizedStudent({
+  //     name: "Huỳnh Nguyễn Ngọc Thùy",
+  //     mssv: "52400319"
+  //   });
+  //   setSuccessAlert(`🎉 Điểm danh thành công: Huỳnh Nguyễn Ngọc Thùy (52400319)`);
+  //   setTimeout(() => setSuccessAlert(""), 3000);
+  //   setTimeout(() => setRecognizedStudent(null), 3000);
+  // };
 
   return (
     <div className="attendance-wrapper">
@@ -152,7 +174,7 @@ function Attendance() {
                   <option value="">Chọn lớp học</option>
                   {Array.isArray(classes) && classes.map((cls, index) => (
                     <option key={cls.class_id || index} value={cls.class_id}>
-                      {`${cls.subject_id} - ${cls.subject_name || 'Lập trình Web'} - Nhóm ${cls.group_id}${cls.sub_id ? ` - Tổ ${cls.sub_id}` : ""} - HK ${cls.semester}`}
+                      {`${cls.subject_id} - ${cls.subject_name} - Nhóm ${cls.group_id}${cls.sub_id ? ` - Tổ ${cls.sub_id}` : ""} - HK ${cls.semester}`}
                     </option>
                   ))}
                 </select>
@@ -165,6 +187,13 @@ function Attendance() {
                   <option value="1">Buổi 1</option>
                   <option value="2">Buổi 2</option>
                   <option value="3">Buổi 3</option>
+                  <option value="4">Buổi 4</option>
+                  <option value="5">Buổi 5</option>
+                  <option value="6">Buổi 6</option>
+                  <option value="7">Buổi 7</option>
+                  <option value="8">Buổi 8</option>
+                  <option value="9">Buổi 9</option>
+                  <option value="10">Buổi 10</option>
                 </select>
               </div>
             </div>
@@ -250,34 +279,53 @@ function Attendance() {
               </button>
             </div>
             
-            <div className="live-camera-container">
-              <Webcam
-                audio={false}
-                ref={webcamRef}
-                screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: selectedDevice === "laptop" ? "user" : "environment" }}
-                className="live-video"
-              />
-              
-              {recognizedStudent && !isGroupMode && (
-                <div className="ai-overlay success">
-                  <div className="overlay-avatar">
-                    {recognizedStudent.name.charAt(0)}
+            <div className="camera-content">
+              <div className="live-camera-container">
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={{ facingMode: selectedDevice === "laptop" ? "user" : "environment" }}
+                  className="live-video"
+                />
+                
+                {recognizedStudent && !isGroupMode && (
+                  <div className="ai-overlay success">
+                    <div className="overlay-avatar">
+                      {recognizedStudent.name.charAt(0)}
+                    </div>
+                    <div className="overlay-info">
+                      <span className="overlay-name">{recognizedStudent.name}</span>
+                      <span className="overlay-mssv">{recognizedStudent.mssv}</span>
+                    </div>
+                    <div className="overlay-status">
+                      Đã điểm danh
+                    </div>
                   </div>
-                  <div className="overlay-info">
-                    <span className="overlay-name">{recognizedStudent.name}</span>
-                    <span className="overlay-mssv">{recognizedStudent.mssv}</span>
-                  </div>
-                  <div className="overlay-status">
-                    Đã điểm danh
-                  </div>
+                )}
+              </div>
+
+              <div className="attendance-sidebar">
+                <div className="sidebar-title">10 lượt điểm danh gần nhất</div>
+                <div className="attendance-list">
+                  {recentAttendances.length === 0 ? (
+                    <div className="attendance-empty">Chưa có dữ liệu điểm danh</div>
+                  ) : (
+                    recentAttendances.map((item) => (
+                      <div key={item.mssv} className="attendance-item">
+                        <div>
+                          <div className="attendance-name">{item.name}</div>
+                        </div> 
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
-            <button onClick={simulateAI} style={{marginTop: "10px", padding: "8px", background: "#f0f0f0", border: "1px solid #ccc", cursor: "pointer"}}>
-              [Test] Giả lập có người đi qua
-            </button>
+            {/* <button onClick={simulateAI} style={{marginTop: "10px", padding: "8px", background: "#f0f0f0", border: "1px solid #ccc", cursor: "pointer"}}> */}
+              {/* [Test] Giả lập có người đi qua */}
+            {/* </button> */}
           </div>
         )}
       </div>
