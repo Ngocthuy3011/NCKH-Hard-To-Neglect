@@ -5,11 +5,12 @@ from database.models import Faces_embedding, Attendance, Enrollments, Classes, S
 from pydantic import BaseModel
 import numpy as np
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import random
 
 from model_api.convert import FaceProcessor
 
@@ -19,10 +20,16 @@ router = APIRouter(prefix="/api", tags=["Face & Attendance API"])
 DB_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
 
 # ==========================================
+# BỘ NHỚ LƯU TRẠNG THÁI ĐIỂM DANH ONLINE
+# ==========================================
+# Cấu trúc: { class_id: {"is_open": True, "pin_code": "1234", "end_time": datetime} }
+active_sessions = {}
+
+# ==========================================
 # CẤU HÌNH EMAIL HỆ THỐNG
 # ==========================================
 SENDER_EMAIL = "stdattendsystem.htn@gmail.com"
-SENDER_PASSWORD = "eyeatdmdzfyezhrl"  # Đã xóa khoảng trắng theo chuẩn của Python
+SENDER_PASSWORD = "eyeatdmdzfyezhrl"  
 
 def send_warning_email_background(student_id: str, student_name: str, class_name: str, time_str: str, absent_count: int, db: Session):
     """Hàm gửi email cảnh báo chạy ngầm"""
@@ -109,6 +116,8 @@ class AttendanceRequest(BaseModel):
     class_id: int
     session_no: int
     cutoff_time: str = None
+    pin_code: str = None  # Nhận mã PIN từ Sinh viên
+    is_online: bool = False # Cờ phân biệt điểm danh từ xa (SV) hay trực tiếp (GV)
 
 class ImagesDict(BaseModel):
     straight: List[str] = []
@@ -118,6 +127,14 @@ class ImagesDict(BaseModel):
 class RegisterFaceRequest(BaseModel):
     student_id: str
     images: ImagesDict
+
+# Thêm 2 Schema mới cho chức năng Mở/Đóng phiên của Giảng viên
+class OpenAttendanceRequest(BaseModel):
+    class_id: int
+    duration_minutes: int  # Thời gian đếm ngược (phút)
+
+class CloseAttendanceRequest(BaseModel):
+    class_id: int
 
 # ==========================================
 # 3. HÀM PHỤ TRỢ
@@ -178,11 +195,65 @@ def format_pgvector(vector_list):
     return f"[{','.join(map(str, vector_list))}]"
 
 # ==========================================
-# 4. API ĐIỂM DANH CÁ NHÂN (CÓ GỬI EMAIL & WEBSOCKET)
+# 4. API QUẢN LÝ PHIÊN ĐIỂM DANH ONLINE (MÃ PIN + ĐẾM NGƯỢC)
+# ==========================================
+@router.post("/open-attendance")
+async def open_attendance(request: OpenAttendanceRequest):
+    """API cho Giảng viên mở phiên điểm danh từ xa"""
+    # Sinh mã PIN ngẫu nhiên 4 số
+    pin_code = str(random.randint(1000, 9999))
+    end_time = datetime.now() + timedelta(minutes=request.duration_minutes)
+    
+    active_sessions[request.class_id] = {
+        "is_open": True,
+        "pin_code": pin_code,
+        "end_time": end_time
+    }
+    
+    # Bắn tín hiệu WebSocket cho toàn bộ Sinh viên biết để bật form nhập PIN
+    import json
+    await manager.broadcast(json.dumps({
+        "type": "OPEN_ATTENDANCE",
+        "class_id": request.class_id,
+        "end_time": end_time.isoformat()
+    }))
+    
+    return {"status": "success", "pin_code": pin_code, "end_time": end_time}
+
+@router.post("/close-attendance")
+async def close_attendance(request: CloseAttendanceRequest):
+    """API cho Giảng viên đóng phiên sớm"""
+    if request.class_id in active_sessions:
+        del active_sessions[request.class_id]
+        
+    import json
+    await manager.broadcast(json.dumps({
+        "type": "CLOSE_ATTENDANCE",
+        "class_id": request.class_id
+    }))
+    return {"status": "success", "message": "Đã đóng phiên điểm danh"}
+
+# ==========================================
+# 4.1 API ĐIỂM DANH CÁ NHÂN (HỖ TRỢ OFFLINE VÀ ONLINE CÓ PIN CODE)
 # ==========================================
 @router.post("/check-attendance-ai")
 async def check_attendance_ai(request: AttendanceRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     print("\n" + "="*50)
+    
+    # --- FIREWALL: CHỈ KIỂM TRA MÃ PIN NẾU SINH VIÊN TỰ ĐIỂM DANH (ONLINE) ---
+    if request.is_online:
+        session_info = active_sessions.get(request.class_id)
+        if not session_info or not session_info["is_open"]:
+            return {"status": "fail", "message": "Giảng viên chưa mở phiên điểm danh hoặc phiên đã kết thúc!"}
+            
+        if datetime.now() > session_info["end_time"]:
+            del active_sessions[request.class_id] # Xoá session quá hạn
+            return {"status": "fail", "message": "Đã hết thời gian điểm danh!"}
+            
+        if request.pin_code != session_info["pin_code"]:
+            return {"status": "fail", "message": "Mã PIN không chính xác. Vui lòng xem trên màn hình Giảng viên!"}
+    # ---------------------------------------------
+
     print("[INFO] Bat dau xu ly anh diem danh moi...")
     try:
         current_vector = face_tool.get_embedding(request.image_base64)
@@ -214,10 +285,10 @@ async def check_attendance_ai(request: AttendanceRequest, background_tasks: Back
         if result:
             student_id, distance = result
             print(f"[INFO] Ket qua AI: Khuon mat khop nhat voi sinh vien [{student_id}]")
-            print(f"[INFO] Do lech (Distance): {distance:.4f} (Nguong chap nhan: < 0.60)")
+            print(f"[INFO] Do lech (Distance): {distance:.4f} (Nguong chap nhan: < 0.40)")
             
-            # Sử dụng ngưỡng linh hoạt 0.60
-            if distance < 0.60:
+            # Sử dụng ngưỡng khắt khe 0.40 để đảm bảo độ chính xác tuyệt đối
+            if distance < 0.40:
                 print("[INFO] Khoang cach hop le. Tien hanh kiem tra dieu kien diem danh...")
                 db_result = process_attendance_db(student_id, request.class_id, request.session_no, request.cutoff_time, db)
                 
@@ -258,7 +329,7 @@ async def check_attendance_ai(request: AttendanceRequest, background_tasks: Back
                     print("[WARNING] Nhan dien thanh cong nhung sinh vien khong nam trong danh sach lop hoc nay.")
                     return {"status": "fail", "message": "Khuôn mặt hợp lệ nhưng bạn KHÔNG thuộc lớp này!"}
             else:
-                print("[WARNING] Tu choi nhan dien. Do lech vuot qua nguong cho phep (> 0.60).")
+                print("[WARNING] Tu choi nhan dien. Do lech vuot qua nguong cho phep (> 0.40).")
                 return {"status": "fail", "message": "Khuôn mặt không khớp với cơ sở dữ liệu!"}
         else:
             print("[ERROR] Co so du lieu hien tai chua co bat ky du lieu khuon mat nao.")
@@ -301,8 +372,8 @@ async def check_attendance_group(request: AttendanceRequest, db: Session = Depen
 
             if result:
                 student_id, distance = result
-                # Sử dụng ngưỡng 0.60 đồng nhất với điểm danh cá nhân
-                if distance < 0.60: 
+                # Sử dụng ngưỡng 0.40 đồng nhất với điểm danh cá nhân
+                if distance < 0.40: 
                     db_result = process_attendance_db(student_id, request.class_id, request.session_no, request.cutoff_time, db)
                     if db_result and db_result != "ALREADY_CHECKED":
                         recognized_count += 1
@@ -472,18 +543,4 @@ async def get_student_detail(student_id: str, class_id: int, db: Session = Depen
         return {"history": [], "summary": {}}
     
 # ==========================================
-# 10. API CẬP NHẬT EMAIL CÁ NHÂN
-# ==========================================
-@router.put("/update-profile")
-async def update_profile(student_id: str, email: str, db: Session = Depends(get_db)):
-    try:
-        user_record = db.query(Account).filter(Account.username == student_id).first()
-        if not user_record:
-            return {"status": "error", "message": "Không tìm thấy tài khoản!"}
-        
-        user_record.email = email
-        db.commit()
-        return {"status": "success", "message": "Cập nhật email thành công!"}
-    except Exception as e:
-        db.rollback()
-        return {"status": "error", "message": str(e)}
+# 10. API C

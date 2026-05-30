@@ -14,6 +14,10 @@ const StudentAttendance = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   
+  // State MỚI: Quản lý trạng thái mở/đóng và Mã PIN
+  const [inputPin, setInputPin] = useState("");
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const mediaPipeCameraRef = useRef(null);
@@ -37,11 +41,32 @@ const StudentAttendance = () => {
 
   useEffect(() => {
     fetchSchedule();
+
+    // Lắng nghe tín hiệu WebSocket từ Giảng viên
+    const ws = new WebSocket("ws://localhost:8000/api/ws");
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "OPEN_ATTENDANCE") {
+            setIsAttendanceOpen(true);
+        }
+        if (data.type === "CLOSE_ATTENDANCE") {
+            setIsAttendanceOpen(false);
+        }
+      } catch (err) {
+        console.error("Lỗi parse WS:", err);
+      }
+    };
+
+    return () => {
+      if (ws.readyState === 1) ws.close();
+    };
   }, []);
 
-  const handleOpenAttendance = (subject) => {
+  const handleOpenAttendanceModal = (subject) => {
     setSelectedSubject(subject);
     setShowCamera(true);
+    setInputPin(""); // Reset mã PIN mỗi lần mở lại modal
   };
 
   // --- LOGIC VẼ KHUNG XANH MEDIAPIPE ---
@@ -100,6 +125,11 @@ const StudentAttendance = () => {
   }, [showCamera]);
 
   const handleCaptureFace = async () => {
+    // Chặn nếu sinh viên chưa nhập mã PIN
+    if (!inputPin) {
+        return alert("⚠️ Vui lòng nhập mã PIN trên màn hình của Giảng viên!");
+    }
+
     const imageSrc = webcamRef.current.getScreenshot();
     if (!imageSrc) return alert("⚠️ Không thể chụp ảnh!");
 
@@ -114,7 +144,9 @@ const StudentAttendance = () => {
         body: JSON.stringify({
           image_base64: imageSrc,
           class_id: selectedSubject?.id, 
-          session_no: 1 
+          session_no: 1,
+          pin_code: inputPin,
+          is_online: true // QUAN TRỌNG: Báo cho Backend đây là Sinh viên
         })
       });
 
@@ -149,7 +181,7 @@ const StudentAttendance = () => {
               </div>
 
               {subject?.status === 'pending' ? (
-                <button className="btn-take-attendance" onClick={() => handleOpenAttendance(subject)}>
+                <button className="btn-take-attendance" onClick={() => handleOpenAttendanceModal(subject)}>
                  Điểm danh
                 </button>
               ) : (
@@ -166,7 +198,7 @@ const StudentAttendance = () => {
       {showCamera && (
         <div className="camera-modal-overlay">
           <div className="camera-modal">
-            <h2>Điểm danh khuôn mặt</h2>
+            <h2>{isAttendanceOpen ? "Đang mở phiên điểm danh" : "Phiên điểm danh chưa mở"}</h2>
             <p>Môn: <strong>{selectedSubject?.name}</strong></p>
 
             <div className="camera-frame" style={{ position: 'relative', width: '100%', height: '300px', overflow: 'hidden', borderRadius: '12px' }}>
@@ -180,10 +212,43 @@ const StudentAttendance = () => {
               <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10 }} />
             </div>
 
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={() => setShowCamera(false)}>Hủy bỏ</button>
-              <button className="capture-btn" onClick={handleCaptureFace}>Chụp & Xác nhận</button>
+            {/* KHU VỰC NHẬP MÃ PIN */}
+            <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                <input 
+                    type="text" 
+                    placeholder="Nhập mã PIN (trên màn hình GV)" 
+                    value={inputPin} 
+                    onChange={(e) => setInputPin(e.target.value)} 
+                    style={{
+                        padding: '10px', 
+                        fontSize: '16px', 
+                        width: '80%', 
+                        borderRadius: '8px', 
+                        border: '1px solid #ccc',
+                        textAlign: 'center',
+                        letterSpacing: '2px'
+                    }}
+                    disabled={!isAttendanceOpen} // Khóa nhập nếu GV chưa mở
+                />
             </div>
+
+            <div className="modal-actions" style={{ marginTop: '15px' }}>
+              <button className="cancel-btn" onClick={() => setShowCamera(false)}>Hủy bỏ</button>
+              <button 
+                className="capture-btn" 
+                onClick={handleCaptureFace}
+                disabled={!isAttendanceOpen}
+                style={{ opacity: isAttendanceOpen ? 1 : 0.5, cursor: isAttendanceOpen ? 'pointer' : 'not-allowed' }}
+              >
+                Chụp & Xác nhận
+              </button>
+            </div>
+            
+            {!isAttendanceOpen && (
+                <p style={{ color: '#e74c3c', fontSize: '14px', marginTop: '10px', textAlign: 'center' }}>
+                    * Vui lòng đợi Giảng viên mở quyền điểm danh.
+                </p>
+            )}
           </div>
         </div>
       )}

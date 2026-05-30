@@ -10,14 +10,18 @@ function Attendance() {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
   const [loading, setLoading] = useState(true);
+  
+  // Trạng thái Camera tại lớp
   const [isCameraActive, setIsCameraActive] = useState(false);
-  
-  // THÊM STATE QUẢN LÝ CHẾ ĐỘ ĐIỂM DANH (CÁ NHÂN HAY TẬP THỂ)
   const [isGroupMode, setIsGroupMode] = useState(false); 
-  
   const [recognizedStudent, setRecognizedStudent] = useState(null);
   const [successAlert, setSuccessAlert] = useState(""); 
   
+  // Trạng thái Điểm danh Online (Cho SV tự điểm danh ở nhà)
+  const [pinCode, setPinCode] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const timerRef = useRef(null);
+
   const webcamRef = useRef(null);
   const user = getCurrentUser();
 
@@ -60,7 +64,7 @@ function Attendance() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "ATTENDANCE_SUCCESS") {
-        const studentName = data.student_name || "Sinh viên"; // Fallback nếu điểm danh tập thể ko trả về tên
+        const studentName = data.student_name || "Sinh viên"; 
         setRecognizedStudent({
           name: studentName,
           mssv: data.student_id
@@ -74,12 +78,11 @@ function Attendance() {
     };
 
     return () => {
-      if (ws.readyState === 1) {
-        ws.close();
-      }
+      if (ws.readyState === 1) ws.close();
     };
   }, []);
 
+  // Vòng lặp bắn API khi mở Camera trực tiếp tại lớp
   useEffect(() => {
     let interval;
     if (isCameraActive && selectedClass && selectedSession) {
@@ -88,9 +91,7 @@ function Attendance() {
           const imageSrc = webcamRef.current.getScreenshot();
           if (imageSrc) {
             try {
-              // TỰ ĐỘNG CHUYỂN ĐỔI API DỰA VÀO CHẾ ĐỘ ĐANG CHỌN
               const endpoint = isGroupMode ? "check-attendance-group" : "check-attendance-ai";
-              
               await fetch(`http://localhost:8000/api/${endpoint}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -105,12 +106,19 @@ function Attendance() {
             }
           }
         }
-      }, 2500); // Tăng lên 2.5s để AI có thời gian quét đám đông
+      }, 2500); 
     }
     return () => clearInterval(interval);
   }, [isCameraActive, selectedClass, selectedSession, isGroupMode]);
 
-  const handleStartAttendance = () => {
+  // Cleanup Timer khi đổi trang
+  useEffect(() => {
+      return () => {
+          if (timerRef.current) clearInterval(timerRef.current);
+      };
+  }, []);
+
+  const handleStartLocalCamera = () => {
     if (!selectedClass || !selectedSession) {
       alert("Vui lòng chọn lớp và buổi học");
       return;
@@ -118,10 +126,62 @@ function Attendance() {
     setIsCameraActive(true);
   };
 
-  const handleStopAttendance = () => {
+  const handleStopLocalCamera = () => {
     setIsCameraActive(false);
     setRecognizedStudent(null);
     setSuccessAlert("");
+  };
+
+  // HÀM MỞ PHIÊN ĐIỂM DANH ONLINE (MÃ PIN)
+  const handleOpenOnlineAttendance = async () => {
+    if (!selectedClass) {
+        return alert("Vui lòng chọn lớp học trước khi mở phiên điểm danh Online!");
+    }
+    
+    try {
+        const response = await fetch("http://localhost:8000/api/open-attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ class_id: parseInt(selectedClass), duration_minutes: 5 })
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            setPinCode(data.pin_code);
+            setTimeLeft(300); // 5 phút
+            
+            // Xóa timer cũ nếu có
+            if (timerRef.current) clearInterval(timerRef.current);
+            
+            timerRef.current = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timerRef.current);
+                        setPinCode(null); // Hết giờ tự ẩn mã PIN
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+    } catch (error) {
+        console.error("Lỗi mở phiên:", error);
+        alert("Không thể kết nối đến máy chủ!");
+    }
+  };
+
+  const handleCloseOnlineAttendance = async () => {
+    try {
+        await fetch("http://localhost:8000/api/close-attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ class_id: parseInt(selectedClass) })
+        });
+        setPinCode(null);
+        if (timerRef.current) clearInterval(timerRef.current);
+    } catch (error) {
+        console.error("Lỗi đóng phiên:", error);
+    }
   };
 
   const simulateAI = () => {
@@ -137,13 +197,13 @@ function Attendance() {
   return (
     <div className="attendance-wrapper">
       <div className="attendance-header-line">
-        <h2 className="attendance-page-title">Điểm danh trực tiếp</h2>
+        <h2 className="attendance-page-title">Quản lý phiên điểm danh</h2>
       </div>
 
       <div className="attendance-card">
         {!isCameraActive ? (
           <div className="setting-panel">
-            <h3>Bắt đầu phiên điểm danh</h3>
+            <h3>Cấu hình lớp học</h3>
             
             <div className="selection-group">
               <div className="input-item">
@@ -169,54 +229,86 @@ function Attendance() {
               </div>
             </div>
 
-            {/* KHỐI CHỌN CHẾ ĐỘ ĐIỂM DANH */}
-            <div className="input-item" style={{ marginTop: "15px", padding: "10px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-              <label style={{ fontWeight: "bold", marginBottom: "10px", display: "block" }}>Chế độ AI điểm danh</label>
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                  <input 
-                    type="radio" 
-                    name="mode" 
-                    checked={!isGroupMode} 
-                    onChange={() => setIsGroupMode(false)} 
-                  /> 👤 Từng cá nhân (Nhanh)
-                </label>
-                <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                  <input 
-                    type="radio" 
-                    name="mode" 
-                    checked={isGroupMode} 
-                    onChange={() => setIsGroupMode(true)} 
-                  /> 👥 Tập thể lớp (Quét đám đông)
-                </label>
-              </div>
+            {/* PHẦN 1: ĐIỂM DANH TẠI LỚP (CAMERA TRỰC TIẾP) */}
+            <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>1. Điểm danh trực tiếp tại lớp (Giảng viên bật Camera)</h4>
+                
+                <div className="input-item" style={{ padding: "10px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                  <label style={{ fontWeight: "bold", marginBottom: "10px", display: "block" }}>Chế độ AI điểm danh</label>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                      <input 
+                        type="radio" 
+                        name="mode" 
+                        checked={!isGroupMode} 
+                        onChange={() => setIsGroupMode(false)} 
+                      /> 👤 Từng cá nhân (Nhanh)
+                    </label>
+                    <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                      <input 
+                        type="radio" 
+                        name="mode" 
+                        checked={isGroupMode} 
+                        onChange={() => setIsGroupMode(true)} 
+                      /> 👥 Tập thể lớp (Quét đám đông)
+                    </label>
+                  </div>
+                </div>
+
+                <div className="device-selection" style={{ marginTop: "15px" }}>
+                  <label className="device-label">Thiết bị đầu vào</label>
+                  <div className="device-options">
+                    <div 
+                      className={`device-box ${selectedDevice === "laptop" ? "active" : ""}`}
+                      onClick={() => setSelectedDevice("laptop")}
+                    >
+                      <AiOutlineLaptop className="device-icon" />
+                      <span>Laptop Camera</span>
+                    </div>
+                    <div 
+                      className={`device-box ${selectedDevice === "phone" ? "active" : ""}`}
+                      onClick={() => setSelectedDevice("phone")}
+                    >
+                      <AiOutlineCamera className="device-icon" />
+                      <span>Phone Camera</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="button-container" style={{ marginTop: '15px' }}>
+                  <button className="start-btn-large" onClick={handleStartLocalCamera}>
+                    Bắt đầu Camera & Điểm danh
+                  </button>
+                </div>
             </div>
 
-            <div className="device-selection" style={{ marginTop: "15px" }}>
-              <label className="device-label">Thiết bị đầu vào</label>
-              <div className="device-options">
-                <div 
-                  className={`device-box ${selectedDevice === "laptop" ? "active" : ""}`}
-                  onClick={() => setSelectedDevice("laptop")}
-                >
-                  <AiOutlineLaptop className="device-icon" />
-                  <span>Laptop Camera</span>
-                </div>
-                <div 
-                  className={`device-box ${selectedDevice === "phone" ? "active" : ""}`}
-                  onClick={() => setSelectedDevice("phone")}
-                >
-                  <AiOutlineCamera className="device-icon" />
-                  <span>Phone Camera</span>
-                </div>
-              </div>
+            {/* PHẦN 2: ĐIỂM DANH ONLINE (CHO SINH VIÊN) */}
+            <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px', background: '#f0f8ff' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#0984e3' }}>2. Điểm danh Online (Sinh viên tự điểm danh qua web)</h4>
+                
+                {!pinCode ? (
+                    <button 
+                        style={{ padding: '12px 20px', background: '#0984e3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                        onClick={handleOpenOnlineAttendance}
+                    >
+                        Mở phiên điểm danh từ xa (5 Phút)
+                    </button>
+                ) : (
+                    <div style={{ textAlign: 'center', background: '#fff', padding: '20px', borderRadius: '8px', border: '2px solid #0984e3' }}>
+                        <h2 style={{ color: '#d63031', fontSize: '32px', margin: '0' }}>MÃ PIN: {pinCode}</h2>
+                        <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '10px 0' }}>
+                            ⏳ Thời gian còn lại: {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
+                        </p>
+                        <button 
+                            style={{ padding: '8px 15px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            onClick={handleCloseOnlineAttendance}
+                        >
+                            Đóng phiên ngay
+                        </button>
+                    </div>
+                )}
             </div>
-            
-            <div className="button-container">
-              <button className="start-btn-large" onClick={handleStartAttendance}>
-                Bắt đầu Camera & Điểm danh
-              </button>
-            </div>
+
           </div>
         ) : (
           <div className="camera-panel">
@@ -245,7 +337,7 @@ function Attendance() {
                   Chế độ: {isGroupMode ? "Tập thể" : "Cá nhân"}
                 </span>
               </h3>
-              <button className="btn-stop-camera" onClick={handleStopAttendance}>
+              <button className="btn-stop-camera" onClick={handleStopLocalCamera}>
                 <AiOutlineStop /> Kết thúc
               </button>
             </div>
