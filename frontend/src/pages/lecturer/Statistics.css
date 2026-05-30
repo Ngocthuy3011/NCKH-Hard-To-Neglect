@@ -38,19 +38,28 @@
   background: white;
   border-radius: 8px;
   overflow: hidden;
+  table-layout: fixed;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e3e6f0;
+  color: #4a5568;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stats-table th {
-  background-color: #1a3772; /* Màu Navy đồng bộ với Header */
+  background-color: #1a3772;
   color: white;
-  text-align: left;
-  padding: 12px;
+  text-align: center;
 }
 
 .stats-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e3e6f0;
-  color: #4a5568;
+  text-align: center;
+  font-size: 14px;
 }
 
 /* Hiệu ứng khi rê chuột vào hàng */
@@ -66,84 +75,41 @@
   transition: color 0.2s;
 }
 
-.student-name:hover {
-  text-decoration: underline;
+.stats-table th:nth-child(1),
+.stats-table td:nth-child(1) {
+  width: 7%;
 }
 
-.search-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: nowrap;
-  min-width: 0;
-  flex: 0 1 auto;
+.stats-table th:nth-child(2),
+.stats-table td:nth-child(2) {
+  width: 12%;
 }
 
-.search-group:first-child {
-  flex: 0 0 500px;
-  min-width: 500px;
+.stats-table th:nth-child(3),
+.stats-table td:nth-child(3) {
+  width: 28%;
 }
 
-.search-group:last-child {
-  margin-left: auto;
-  flex: 0 0 auto;
+.stats-table th:nth-child(4),
+.stats-table td:nth-child(4) {
+  width: 10%;
 }
 
-.search-group .select-box,
-.search-group .input-search,
-.search-group .btn-search-blue,
-.search-group .btn-search-gray {
-  height: 42px;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  vertical-align: middle;
-  line-height: 1.2;
+.stats-table th:nth-child(5),
+.stats-table td:nth-child(5),
+.stats-table th:nth-child(6),
+.stats-table td:nth-child(6) {
+  width: 8%;
 }
 
-.search-group .select-box,
-.search-group .input-search {
-  padding: 0 14px;
+.stats-table th:nth-child(7),
+.stats-table td:nth-child(7) {
+  width: 12%;
 }
 
-.search-group .select-box {
-  width: 380px;
-  min-width: 280px;
-}
-
-.search-group .input-search {
-  min-width: 220px;
-  width: 220px;
-}
-
-.search-group .select-box option {
-  white-space: normal;
-}
-
-/* Style cho bảng thống kê */
-.stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.stats-table th {
-  background-color: #1a3772; /* Màu Navy đồng bộ với Header */
-  color: white;
-  text-align: left;
-  padding: 12px;
-}
-
-.stats-table td {
-  padding: 12px;
-  /* margin-top: 0;
-  padding-top: 0;  */
-  border-bottom: 1px solid #e3e6f0;
-  color: #4a5568;
+.stats-table th:nth-child(8),
+.stats-table td:nth-child(8) {
+  width: 15%;
 }
 
 /* Hiệu ứng khi rê chuột vào hàng */
@@ -223,11 +189,11 @@
   background-color: #4e73df;
   color: white;
   border: none;
-  padding: 0 18px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
-  /* gap: 8px; */
+  gap: 0px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -243,7 +209,7 @@
   background-color: #51ae5c;
   color: #ffffff;
   border: 1px solid #d1d3e2;
-  padding: 0 18px;
+  padding: 0 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;

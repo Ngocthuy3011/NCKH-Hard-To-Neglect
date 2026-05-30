@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Statistics.css';
+import { getAuthHeaders } from '../../utils/jwt';
 
 function Statistics() {
   const [selectedClass, setSelectedClass] = useState("");
@@ -15,8 +16,6 @@ function Statistics() {
   const [studentDetailError, setStudentDetailError] = useState("");
   const [showStudentDetailModal, setShowStudentDetailModal] = useState(false);
 
-  const teacherId = "2025001"; 
-
   const handleLoadClasses = async () => {
     if (classList.length > 0) {
       setShowClassList(true);
@@ -26,10 +25,10 @@ function Statistics() {
     setLoadingClasses(true);
     setShowClassList(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/classes', {
+      const response = await fetch('http://localhost:8000/lecturer/classes', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
         }
       });
       if (!response.ok) {
@@ -37,7 +36,6 @@ function Statistics() {
       }
       const data = await response.json();
       
-      // ĐÃ SỬA LỖI Ở ĐÂY: Kiểm tra và bóc tách đúng mảng data từ Backend
       if (data.status === "success" && Array.isArray(data.data)) {
         setClassList(data.data);
         if (data.data.length === 0) alert("Giảng viên này chưa có lớp.");
@@ -50,7 +48,7 @@ function Statistics() {
 
     } catch (error) {
       console.error("Không tải được danh sách lớp:", error);
-      alert("Không tải được danh sách lớp. Kiểm tra backend và teacher_id.");
+      alert("Không tải được danh sách lớp. Kiểm tra backend và xác thực giảng viên.");
     } finally {
       setLoadingClasses(false);
     }
@@ -196,6 +194,21 @@ function Statistics() {
     setStudentDetailError("");
   };
 
+  const formatAttendanceTime = (timeValue) => {
+    if (!timeValue) return "-";
+    const date = new Date(timeValue);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString([], {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    return String(timeValue);
+  };
+
   const selectedClassInfo = classList.find(c => String(c.class_id) === String(selectedClass));
 
   return (
@@ -265,14 +278,14 @@ function Statistics() {
             <table className="stats-table">
               <thead>
                 <tr>
-                  <th>STT</th>
-                  <th>MSSV</th>
-                  <th>Họ và Tên</th>
-                  <th>Buổi điểm danh</th>
-                  <th>Vắng</th>
-                  <th>Trễ</th>
-                  <th>Tỉ lệ chuyên cần</th>
-                  <th>Đánh giá</th>
+                  <th> STT</th>
+                  <th> MSSV</th>
+                  <th> Họ và Tên</th>
+                  <th> Có mặt</th>
+                  <th> Vắng</th>
+                  <th> Trễ</th>
+                  <th> Chuyên cần</th>
+                  <th> Đánh giá</th>
                 </tr>
               </thead>
               <tbody>
@@ -344,23 +357,23 @@ function Statistics() {
                     <table className="stats-table">
                       <thead>
                         <tr>
-                          <th>Buổi</th>
-                          <th>Trạng thái</th>
-                          <th>Thời gian</th>
+                          <th className="col-session">Buổi</th>
+                          <th className="col-status">Trạng thái</th>
+                          <th className="col-time">Thời gian</th>
                         </tr>
                       </thead>
                       <tbody>
                         {studentDetail.history.length > 0 ? (
                           studentDetail.history.map((row, idx) => (
                             <tr key={`${row.session_no}-${idx}`}>
-                              <td>{row.session_no}</td>
-                              <td style={{
+                              <td className="col-session">{row.session_no}</td>
+                              <td className="col-status" style={{
                                 color: row.status === 'có mặt' ? 'green' : (row.status === 'vắng' ? 'red' : '#fd7e14'),
                                 fontWeight: 'bold'
                               }}>
                                 {row.status ? (row.status.charAt(0).toUpperCase() + row.status.slice(1)) : 'Chưa điểm danh'}
                               </td>
-                              <td>{row.time ? new Date(row.time).toLocaleString() : '-'}</td>
+                              <td className="col-time">{formatAttendanceTime(row.time)}</td>
                             </tr>
                           ))
                         ) : (

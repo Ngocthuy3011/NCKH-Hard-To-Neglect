@@ -1,8 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+<<<<<<< HEAD
+from database import models, crud, db
+from fastapi import FastAPI
+
+app = FastAPI()  # Dòng này cực kỳ quan trọng, uvicorn tìm chữ 'app' ở đây
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+=======
 from backend.database import db
 from database import models, crud
 from datetime import datetime
+>>>>>>> f11355646163019787ab6335cec5c1f960797283
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 

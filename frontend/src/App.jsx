@@ -44,7 +44,15 @@ function App() {
           // BẢO MẬT TUYỆT ĐỐI: Ghi đè role bằng data chuẩn từ Backend trả về
           // Nếu Backend báo là 'student', dù đang ở giao diện GV cũng bị bế sang trang SV
           if (userData.role) {
-            setRole(userData.role); 
+            const r = String(userData.role).toLowerCase();
+            if (r === 'lecturer' || r.includes('lect') || r.includes('giang') || r.includes('teacher')) {
+              setRole('lecturer');
+            } else if (r === 'student' || r.includes('student') || r.includes('sv') || r.includes('sinh')) {
+              setRole('student');
+            } else {
+              // Nếu backend trả về giá trị không mong đợi, giữ role đang chọn ban đầu
+              console.warn('Unrecognized role from backend:', userData.role);
+            }
           }
         }}
         // ĐÃ XÓA: onSwitchToRegister
