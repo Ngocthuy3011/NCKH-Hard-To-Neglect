@@ -345,11 +345,15 @@ async def check_attendance_ai(request: AttendanceRequest, background_tasks: Back
 # ==========================================
 @router.post("/check-attendance-group")
 async def check_attendance_group(request: AttendanceRequest, db: Session = Depends(get_db)):
+    print("\n" + "-"*40)
+    print("[INFO] Bắt đầu quét ảnh điểm danh TẬP THỂ...")
     try:
         face_vectors_list = face_tool.get_multiple_embeddings(request.image_base64) 
         if not face_vectors_list:
+            print("[WARNING] Không tìm thấy khuôn mặt nào trong ảnh!")
             return {"status": "fail", "message": "Không tìm thấy khuôn mặt nào trong ảnh!"}
 
+        print(f"[INFO] Phát hiện {len(face_vectors_list)} khuôn mặt trong khung hình.")
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         recognized_count = 0
@@ -372,24 +376,39 @@ async def check_attendance_group(request: AttendanceRequest, db: Session = Depen
 
             if result:
                 student_id, distance = result
+                print(f"[AI MATCH] Khớp với MSSV: {student_id} | Độ lệch (Distance): {distance:.4f}")
+                
                 # Sử dụng ngưỡng 0.40 đồng nhất với điểm danh cá nhân
                 if distance < 0.40: 
                     db_result = process_attendance_db(student_id, request.class_id, request.session_no, request.cutoff_time, db)
-                    if db_result and db_result != "ALREADY_CHECKED":
+                    
+                    if db_result == "ALREADY_CHECKED":
+                        print(f"[SKIP] Sinh viên {student_id} đã điểm danh buổi này rồi!")
+                    elif db_result:
                         recognized_count += 1
+                        
+                        # Lấy tên sinh viên để gửi lên Frontend
+                        student_info = db.query(Account).filter(Account.username == student_id).first()
+                        student_name = student_info.full_name if student_info else student_id
+                        
+                        print(f"[SUCCESS] Ghi nhận thành công cho {student_name}")
                         import json
                         await manager.broadcast(json.dumps({
                             "type": "ATTENDANCE_SUCCESS",
                             "student_id": db_result["student_id"],
+                            "student_name": student_name,
                             "time": db_result["time"],
                             "status": db_result["status"]
                         }))
+                else:
+                    print(f"[REJECT] Bị từ chối vì độ lệch {distance:.4f} vượt ngưỡng 0.40")
 
         cur.close()
         conn.close()
         return {"status": "success", "recognized_count": recognized_count, "message": f"Đã điểm danh thành công {recognized_count} sinh viên!"}
 
     except Exception as e:
+        print(f"[ERROR] Lỗi hệ thống: {e}")
         db.rollback()
         return {"status": "error", "message": str(e)}
 
@@ -543,4 +562,18 @@ async def get_student_detail(student_id: str, class_id: int, db: Session = Depen
         return {"history": [], "summary": {}}
     
 # ==========================================
-# 10. API C
+# 10. API CẬP NHẬT EMAIL CÁ NHÂN
+# ==========================================
+@router.put("/update-profile")
+async def update_profile(student_id: str, email: str, db: Session = Depends(get_db)):
+    try:
+        user_record = db.query(Account).filter(Account.username == student_id).first()
+        if not user_record:
+            return {"status": "error", "message": "Không tìm thấy tài khoản!"}
+        
+        user_record.email = email
+        db.commit()
+        return {"status": "success", "message": "Cập nhật email thành công!"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
