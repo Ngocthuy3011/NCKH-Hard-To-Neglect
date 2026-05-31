@@ -17,7 +17,7 @@ from model_api.convert import FaceProcessor
 face_tool = FaceProcessor()
 router = APIRouter(prefix="/api", tags=["Face & Attendance API"])
 
-DB_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
+DB_URL = "postgresql://neondb_owner:npg_YyHMBoC3J4WL@ep-bitter-wind-a1be41ah-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
 # ==========================================
 # BỘ NHỚ LƯU TRẠNG THÁI ĐIỂM DANH ONLINE

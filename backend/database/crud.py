@@ -86,6 +86,24 @@ def update_class(db: Session, class_id: int, update_data: dict):
     return class_obj
 
 
+# HÀM XÓA LỚP (VỪA ĐƯỢC BỔ SUNG)
+def delete_class(db: Session, class_id: int):
+    """ Xóa lớp học và xóa luôn các dữ liệu phụ thuộc để không bị lỗi khóa ngoại """
+    db_class = get_class_by_id(db, class_id)
+    if db_class:
+        # Xóa các bản ghi điểm danh thuộc lớp này trước
+        db.query(models.Attendance).filter(models.Attendance.class_id == class_id).delete()
+        
+        # Xóa danh sách sinh viên đăng ký lớp này
+        db.query(models.Enrollments).filter(models.Enrollments.class_id == class_id).delete()
+        
+        # Cuối cùng mới xóa lớp
+        db.delete(db_class)
+        db.commit()
+        return True
+    return False
+
+
 def update_student(db: Session, student_id: str, update_data: dict):
     if not student_id:
         return None
@@ -305,7 +323,7 @@ def get_student_enrollment_history(db: Session, student_id: str):
         models.Classes.semester,
         models.Enrollments.enrollment_date,
         models.Enrollments.status      # Để phân biệt đang học (active) hay đã xong
-    ). outerjoin(
+    ).outerjoin(
         models.Enrollments, 
         models.Classes.class_id == models.Enrollments.class_id
     ).join(

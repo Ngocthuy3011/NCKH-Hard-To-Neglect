@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './ManageClass.css';
 import * as XLSX from 'xlsx';
 import { AiOutlineEdit, AiOutlineDelete } from "react-icons/ai";
+import { getCurrentUser } from "../../utils/jwt"; // Lấy thông tin Giảng viên
 
 const ManageClass = () => {
   const [selectedClass, setSelectedClass] = useState(null);
@@ -14,7 +15,7 @@ const ManageClass = () => {
   // Modal states
   const [showCreateClassModal, setShowCreateClassModal] = useState(false);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
-  const [editingClass, setEditingClass] = useState(null); // Lớp đang được chỉnh sửa (nếu có)
+  const [editingClass, setEditingClass] = useState(null); 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [excelFile, setExcelFile] = useState(null);
   const [classFormData, setClassFormData] = useState({
@@ -29,6 +30,10 @@ const ManageClass = () => {
     full_name: '',
     class_name: ''
   });
+
+  // LẤY ID CỦA GIẢNG VIÊN
+  const user = getCurrentUser();
+  const teacherId = user ? (user.username || user.mssv) : "";
 
   const fetchClasses = async () => {
     setLoadingClasses(true);
@@ -50,7 +55,7 @@ const ManageClass = () => {
       }
     } catch (error) {
       console.error("Lỗi tải danh sách lớp:", error);
-      setError("Không tải được danh sách lớp từ database. Kiểm tra backend và teacher_id.");
+      setError("Không tải được danh sách lớp từ database.");
     } finally {
       setLoadingClasses(false);
     }
@@ -71,7 +76,7 @@ const ManageClass = () => {
       }
     } catch (error) {
       console.error("Lỗi tải danh sách sinh viên:", error);
-      setError("Không tải được danh sách sinh viên từ database. Kiểm tra backend và class_id.");
+      setError("Không tải được danh sách sinh viên từ database.");
       setStudentsData([]);
     } finally {
       setLoadingStudents(false);
@@ -90,10 +95,35 @@ const ManageClass = () => {
     }
   }, [selectedClass]);
 
-  const handleDeleteClass = (id) => {
+  // HÀM XÓA LỚP ĐÃ ĐƯỢC TÍCH HỢP API 
+  const handleDeleteClass = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa lớp này? Toàn bộ dữ liệu điểm danh sẽ bị mất!")) {
-      console.log("Xóa lớp id:", id);
-      // TODO: Gọi API xóa lớp nếu cần.
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://127.0.0.1:8000/class/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Bắn token xác thực
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Lỗi HTTP ${response.status}`);
+        }
+
+        // Cập nhật lại danh sách trên màn hình ngay lập tức
+        setClassesData(prev => prev.filter(item => item.class_id !== id));
+        
+        if (selectedClass && selectedClass.class_id === id) {
+          setSelectedClass(null);
+        }
+        
+        alert("✅ Đã xóa lớp thành công!");
+      } catch (err) {
+        console.error("Lỗi xóa lớp:", err);
+        alert("❌ Không thể xóa lớp. Lỗi: " + err.message);
+      }
     }
   };
 
@@ -177,7 +207,7 @@ const ManageClass = () => {
         group_id: classFormData.group_id,
         sub_id: classFormData.sub_id,
         semester: classFormData.semester,
-        teacher_id: teacherId,
+        teacher_id: teacherId, 
         students
       };
 
@@ -195,7 +225,7 @@ const ManageClass = () => {
         if (selectedClass?.class_id === editingClass.class_id) {
           setSelectedClass(prev => ({ ...prev, ...classFormData }));
         }
-        setError("Cập nhật lớp học thành công!");
+        alert("Cập nhật lớp học thành công!");
       } else {
         const response = await fetch('http://127.0.0.1:8000/class', {
           method: 'POST',
@@ -206,7 +236,7 @@ const ManageClass = () => {
           throw new Error(`HTTP ${response.status}`);
         }
         await response.json();
-        setError("Lớp mới được tạo thành công!");
+        alert("Lớp mới được tạo thành công!");
       }
 
       setShowCreateClassModal(false);
@@ -270,7 +300,7 @@ const ManageClass = () => {
       });
 
       setShowEditStudentModal(false);
-      setError("Lưu sinh viên thành công!");
+      alert("Lưu sinh viên thành công!");
     } catch (err) {
       setError("Lỗi lưu sinh viên: " + err.message);
     }
@@ -323,14 +353,12 @@ const ManageClass = () => {
                     <td>{item.sub_id || '-'}</td>
                     <td>{item.semester}</td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      {/* <button className="btn-edit" onClick={() => handleEditClass(item)}>Sửa</button>
-                      <button className="btn-delete" onClick={() => handleDeleteClass(item.class_id)}>Xóa</button> */}
                       <button className="btn-icon-edit" onClick={() => handleEditClass(item)} title="Chỉnh sửa">
-                      <AiOutlineEdit size={18} />
-                    </button>
-                    <button className="btn-icon-delete" onClick={() => handleDeleteClass(item.class_id)} title="Xóa">
-                      <AiOutlineDelete size={18} />
-                    </button>
+                        <AiOutlineEdit size={18} />
+                      </button>
+                      <button className="btn-icon-delete" onClick={() => handleDeleteClass(item.class_id)} title="Xóa">
+                        <AiOutlineDelete size={18} />
+                      </button>
                     </td>
                   </tr>
                 ))

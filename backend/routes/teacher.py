@@ -60,6 +60,22 @@ def update_class(class_id: int, update_data: dict = Body(...), db: Session = Dep
         raise HTTPException(status_code=404, detail="Lớp học không tồn tại")
     return jsonable_encoder({"class": updated, "message": "Cập nhật lớp thành công"})
 
+# ==========================================
+# API XÓA LỚP HỌC (VỪA THÊM VÀO)
+# ==========================================
+@router.delete("/class/{class_id}")
+def delete_class_endpoint(class_id: int, db: Session = Depends(get_db)):
+    """Xóa lớp học và các dữ liệu liên quan"""
+    try:
+        success = crud.delete_class(db, class_id)
+        if success:
+            return jsonable_encoder({"status": "success", "message": "Đã xóa lớp thành công"})
+        else:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lớp học này")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Không thể xóa lớp: {str(e)}")
+
 @router.put("/student/{student_id}")
 def update_student(student_id: str, update_data: dict = Body(...), db: Session = Depends(get_db)):
     """Cập nhật hoặc tạo sinh viên, kèm enroll vào lớp nếu cần"""
