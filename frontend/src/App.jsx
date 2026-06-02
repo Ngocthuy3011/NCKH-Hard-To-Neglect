@@ -14,7 +14,6 @@ import StudentProfile from "./pages/student/StudentProfile";
 
 import RoleSelection from "./layouts/RoleSelection";
 import Login from "./layouts/Login";
-// ĐÃ XÓA: import Register from "./layouts/Register";
 
 function App() {
   const [role, setRole] = useState(null);
