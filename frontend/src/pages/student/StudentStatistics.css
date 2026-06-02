@@ -1,12 +1,13 @@
 .statistics-page {
-  padding: 20px;
+  padding: 0px 8px;
   animation: fadeIn 0.4s ease;
 }
 
 .page-title {
+  padding: 0px 8px;
   color: #1b2783;
   font-size: 22px;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
   font-weight: 800;
 }
 

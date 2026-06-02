@@ -1,70 +1,116 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import './SubjectDetails.css';
 
-// Dữ liệu mẫu mô phỏng Database
-const mockDetails = {
-  "IT004": {
-    name: "Lập trình Web (React/PHP)",
-    total: 4,
-    attended: 3,
-    absent: 1,
-    records: [
-      { date: "10/05/2026", time: "07:30 - 09:30", status: "attended" },
-      { date: "03/05/2026", time: "07:30 - 09:30", status: "attended" },
-      { date: "26/04/2026", time: "07:30 - 09:30", status: "absent" },
-      { date: "19/04/2026", time: "07:30 - 09:30", status: "attended" }
-    ]
-  },
-  "IT002": {
-    name: "Mật mã học cơ sở (RSA)",
-    total: 3,
-    attended: 3,
-    absent: 0,
-    records: [
-      { date: "08/05/2026", time: "13:00 - 15:00", status: "attended" },
-      { date: "01/05/2026", time: "13:00 - 15:00", status: "attended" },
-      { date: "24/04/2026", time: "13:00 - 15:00", status: "attended" }
-    ]
-  }
-};
-
 const SubjectDetails = () => {
-  const [selectedSubject, setSelectedSubject] = useState("IT004");
-  const data = mockDetails[selectedSubject];
+  const [history, setHistory] = useState([]);
+  const [subjectOptions, setSubjectOptions] = useState([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAttendanceHistory = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:8000/api/attendance/history', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const historyData = data || [];
+          setHistory(historyData);
+
+          const subjects = [];
+          const subjectMap = new Map();
+
+          historyData.forEach((item) => {
+            if (!subjectMap.has(item.subject_id)) {
+              subjectMap.set(item.subject_id, item.subject_name);
+              subjects.push({ subject_id: item.subject_id, subject_name: item.subject_name });
+            }
+          });
+
+          setSubjectOptions(subjects);
+          if (subjects.length > 0) {
+            setSelectedSubjectId(subjects[0].subject_id);
+          }
+        } else {
+          console.error('Lỗi khi tải dữ liệu chi tiết ngày học');
+        }
+      } catch (error) {
+        console.error('Không thể kết nối Backend:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAttendanceHistory();
+  }, []);
+
+  const filteredRecords = history.filter((record) => record.subject_id === selectedSubjectId);
+  const selectedName = subjectOptions.find((item) => item.subject_id === selectedSubjectId)?.subject_name || '';
+
+  const attendedCount = filteredRecords.filter((record) => record.status === 'có mặt').length;
+  const absentCount = filteredRecords.filter((record) => record.status !== 'có mặt').length;
+  const totalCount = filteredRecords.length;
 
   return (
     <div className="details-container">
       <div className="details-header">
-        <h2 style={{color: '#2d3748', margin: 0}}>Chi tiết từng buổi học</h2>
-        <select 
-          className="subject-select" 
-          value={selectedSubject} 
-          onChange={(e) => setSelectedSubject(e.target.value)}
+        <h2 style={{ color: '#2d3748', margin: 0 }}>Chi tiết từng buổi học</h2>
+        <select
+          className="subject-select"
+          value={selectedSubjectId}
+          onChange={(e) => setSelectedSubjectId(e.target.value)}
+          disabled={isLoading || subjectOptions.length === 0}
         >
-          <option value="IT004">Lập trình Web (React/PHP)</option>
-          <option value="IT002">Mật mã học cơ sở (RSA)</option>
+          {subjectOptions.length === 0 ? (
+            <option value="">Không có dữ liệu</option>
+          ) : (
+            subjectOptions.map((subject) => (
+              <option key={subject.subject_id} value={subject.subject_id}>
+                {subject.subject_name}
+              </option>
+            ))
+          )}
         </select>
       </div>
 
-      <div className="mini-summary">
-        <span>Có mặt: <strong>{data.attended}</strong></span>
-        <span>Vắng mặt: <strong>{data.absent}</strong></span>
-        <span>📊 Tổng số buổi đã diễn ra: <strong>{data.total}</strong></span>
-      </div>
-
-      <div className="date-list">
-        {data.records.map((record, index) => (
-          <div className={`date-card ${record.status}`} key={index}>
-            <div className="date-info">
-              <h4>Ngày: {record.date}</h4>
-              <p>Thời gian: {record.time}</p>
-            </div>
-            <div className={`attendance-status ${record.status === 'attended' ? 'status-yes' : 'status-no'}`}>
-              {record.status === 'attended' ? 'Có mặt' : 'Vắng'}
-            </div>
+      {isLoading ? (
+        <p style={{ color: '#718096', marginTop: '20px' }}>⏳ Đang tải dữ liệu từ hệ thống...</p>
+      ) : filteredRecords.length === 0 ? (
+        <p style={{ color: '#e53e3e', fontWeight: 'bold', marginTop: '20px' }}>
+          Chưa có dữ liệu điểm danh cho môn này.
+        </p>
+      ) : (
+        <>
+          <div className="mini-summary">
+            <span>Có mặt: <strong>{attendedCount}</strong></span>
+            <span>Vắng mặt: <strong>{absentCount}</strong></span>
+            <span>📊 Tổng số buổi đã diễn ra: <strong>{totalCount}</strong></span>
           </div>
-        ))}
-      </div>
+
+          <div className="date-list">
+            {filteredRecords.map((record, index) => (
+              <div className={`date-card ${record.status === 'có mặt' ? 'status-yes' : 'status-no'}`} key={index}>
+                <div className="date-info">
+                  <h4>{selectedName}</h4>
+                  <p>Ngày: {record.date}</p>
+                  <p>Thời gian: {record.time_logged}</p>
+                  <p>Buổi: {record.session_no}</p>
+                </div>
+                <div className={`attendance-status ${record.status === 'có mặt' ? 'status-yes' : 'status-no'}`}>
+                  {record.status === 'có mặt' ? 'Có mặt' : 'Vắng'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

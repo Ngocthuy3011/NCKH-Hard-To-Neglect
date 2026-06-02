@@ -10,28 +10,42 @@ const StudentProfile = ({ user }) => {
   
   // State quản lý email
   const [email, setEmail] = useState(user?.email || "");
+  const [emailError, setEmailError] = useState("");
   
   // State quản lý thời hạn 3 tháng
   const [faceStatus, setFaceStatus] = useState(null);
   const [forceUpdate, setForceUpdate] = useState(false);
 
+  const isValidEmail = (value) => {
+    const trimmed = value.trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
+
   // ===================================
   // 1. API CẬP NHẬT EMAIL
   // ===================================
   const handleUpdateEmail = async () => {
-    if (!email) {
-      alert("Vui lòng nhập email trước khi lưu!");
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setEmailError("Vui lòng nhập email trước khi lưu!");
       return;
     }
+
+    if (!isValidEmail(trimmedEmail)) {
+      setEmailError("Email không hợp lệ. Vui lòng kiểm tra lại định dạng.");
+      return;
+    }
+
     try {
       // Đã thêm student_id vào link API để Backend biết ai đang cập nhật
-      const response = await fetch(`http://localhost:8000/api/update-profile?student_id=${user.mssv}&email=${email}`, {
+      const response = await fetch(`http://localhost:8000/api/update-profile?student_id=${user.mssv}&email=${encodeURIComponent(trimmedEmail)}`, {
         method: 'PUT'
       });
       const data = await response.json();
       
       if (data.status === 'success') {
         alert("Cập nhật email thành công!");
+        setEmailError("");
       } else {
         alert("Lỗi: " + data.message);
       }
@@ -118,20 +132,30 @@ const StudentProfile = ({ user }) => {
         {/* THÊM KHỐI NHẬP EMAIL CÁ NHÂN VÀO ĐÂY */}
         <div className="email-update-section" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc' }}>
           <p style={{ marginBottom: '8px', color: '#4a5568' }}><strong>Email cá nhân (Nhận cảnh báo điểm danh):</strong></p>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Ví dụ: thuy.nguyen@tdtu.edu.vn"
-              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}
-            />
-            <button 
-              onClick={handleUpdateEmail}
-              style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#4e73df', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              Lưu Cập Nhật
-            </button>
+          <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                type="email" 
+                value={email} 
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                }}
+                placeholder="Ví dụ: abc@gmail.com"
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}
+              />
+              <button 
+                onClick={handleUpdateEmail}
+                style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#4e73df', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Lưu Cập Nhật
+              </button>
+            </div>
+            {emailError && (
+              <p style={{ margin: '8px 0 0', color: '#d32f2f', fontSize: '0.95rem' }}>
+                {emailError}
+              </p>
+            )}
           </div>
         </div>
       </div>

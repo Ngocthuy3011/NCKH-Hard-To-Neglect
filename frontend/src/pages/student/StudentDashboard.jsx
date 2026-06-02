@@ -13,6 +13,14 @@ const StudentDashboard = ({ user }) => {
   const [showCamera, setShowCamera] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState([]);
+  const [attendanceSummary, setAttendanceSummary] = useState({
+    total_enrolled: 0,
+    present_count: 0,
+    absent_count: 0,
+    late_count: 0,
+    attendance_rate: '0%',
+    total_attendance: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // References cho Webcam, Canvas (để vẽ khung vuông) và MediaPipe Camera
@@ -39,13 +47,38 @@ const StudentDashboard = ({ user }) => {
       }
     } catch (error) {
       console.error("Không thể kết nối Backend:", error);
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const fetchAttendanceSummary = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/student/summary', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceSummary(data);
+      } else {
+        console.error("Lỗi khi tải tổng quan điểm danh");
+      }
+    } catch (error) {
+      console.error("Không thể kết nối Backend:", error);
     }
   };
 
   useEffect(() => {
-    fetchTodaySchedule();
+    const loadData = async () => {
+      await Promise.all([fetchTodaySchedule(), fetchAttendanceSummary()]);
+      setIsLoading(false);
+    };
+
+    loadData();
   }, []);
 
   const handleOpenAttendance = (subject) => {
@@ -210,15 +243,15 @@ const StudentDashboard = ({ user }) => {
           <div className="stats-grid">
             <div className="stat-card">
               <span>Tỷ lệ chuyên cần</span>
-              <h3>--%</h3>
+              <h3>{attendanceSummary.attendance_rate}</h3>
             </div>
             <div className="stat-card">
               <span>Số buổi đã học</span>
-              <h3>--</h3>
+              <h3>{attendanceSummary.present_count}</h3>
             </div>
             <div className="stat-card">
               <span>Số buổi vắng</span>
-              <h3>--</h3>
+              <h3>{attendanceSummary.absent_count}</h3>
             </div>
           </div>
 
@@ -236,10 +269,13 @@ const StudentDashboard = ({ user }) => {
                     <div key={index} className="schedule-item">
                       <div>
                         <h3 className="schedule-item__name">{subject?.name}</h3>
+                        <p className="schedule-item__meta">
+                          🧾 Mã môn: {subject?.subject_id || 'N/A'} | Nhóm: {subject?.group || 'N/A'} | Học kỳ: {subject?.semester || 'N/A'}
+                        </p>
                         <p className="schedule-item__meta">🕒 {subject?.time} | 📍 {subject?.room}</p>
                       </div>
 
-                      {subject?.status === 'pending' ? (
+                      {/* {subject?.status === 'pending' ? (
                         <button className="attend-btn" onClick={() => handleOpenAttendance(subject)}>
                           📷 Điểm danh
                         </button>
@@ -247,7 +283,7 @@ const StudentDashboard = ({ user }) => {
                         <button className="attend-btn attend-btn--done" disabled>
                           Đã điểm danh
                         </button>
-                      )}
+                      )} */}
                     </div>
                   ))}
                 </div>

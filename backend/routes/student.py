@@ -28,11 +28,10 @@ def get_today_schedule(mssv: str = Depends(get_current_student), db: Session = D
     print("\n========== 🕵️ BẮT ĐẦU QUÉT DỮ LIỆU ==========")
     print(f"1. MSSV đang gọi API từ React: '{mssv}'")
     
-    # Tạm thời TẮT ĐIỀU KIỆN status == 'active' để quét vét cạn xem có gì không
     enrollments = db.query(Enrollments, Classes, Subject)\
         .join(Classes, Enrollments.class_id == Classes.class_id)\
         .join(Subject, Classes.subject_id == Subject.subject_id)\
-        .filter(Enrollments.student_id == mssv)\
+        .filter(Enrollments.student_id == mssv, Enrollments.status == "active")\
         .all()
 
     print(f"2. Số môn học tìm thấy trong CSDL: {len(enrollments)} môn")
@@ -41,14 +40,51 @@ def get_today_schedule(mssv: str = Depends(get_current_student), db: Session = D
     schedule = []
     for enr, cls, sub in enrollments:
         schedule.append({
-            "id": cls.class_id,             # <-- Quan trọng: Phải lấy class_id của cls
-            "subject_id": sub.subject_id,   # Giữ lại để hiển thị mã môn nếu cần
+            "id": cls.class_id,
+            "subject_id": sub.subject_id,
             "name": sub.subject_name,
+            "group": cls.group_id,
+            "semester": cls.semester,
+            "teacher_id": cls.teacher_id,
             "time": "07:30 - 09:30", 
             "room": "Phòng A1.01",   
             "status": "pending" 
         })
     return schedule
+
+
+@router.get("/student/summary")
+def get_student_summary(mssv: str = Depends(get_current_student), db: Session = Depends(get_db)):
+    """API lấy tổng quan điểm danh của sinh viên hiện tại."""
+    total_enrolled = db.query(Enrollments).filter(
+        Enrollments.student_id == mssv,
+        Enrollments.status == "active"
+    ).count()
+
+    present_count = db.query(Attendance).filter(
+        Attendance.student_id == mssv,
+        Attendance.status == 'có mặt'
+    ).count()
+    absent_count = db.query(Attendance).filter(
+        Attendance.student_id == mssv,
+        Attendance.status == 'vắng'
+    ).count()
+    late_count = db.query(Attendance).filter(
+        Attendance.student_id == mssv,
+        Attendance.status == 'trễ'
+    ).count()
+
+    total_attendance = present_count + absent_count + late_count
+    attendance_rate = f"{round((present_count / total_attendance) * 100)}%" if total_attendance else "0%"
+
+    return {
+        "total_enrolled": total_enrolled,
+        "present_count": present_count,
+        "absent_count": absent_count,
+        "late_count": late_count,
+        "total_attendance": total_attendance,
+        "attendance_rate": attendance_rate
+    }
 
 
 # ===== API 2: LẤY LỊCH SỬ ĐIỂM DANH =====

@@ -10,7 +10,7 @@
 .dashboard-header-line {
   /* margin-top: 0;      /* Xóa bỏ khoảng cách phía trên khối tiêu đề */
   /* margin-bottom: 12px; Giữ lại một chút khoảng cách với phần nội dung bên dưới */ 
-  padding: 0 8px;;
+  padding: 0 8px;
 }
 
 .dashboard-title {

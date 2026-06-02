@@ -11,13 +11,19 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import random
+import os
+from dotenv import load_dotenv
 
 from model_api.convert import FaceProcessor
+
+load_dotenv()
 
 face_tool = FaceProcessor()
 router = APIRouter(prefix="/api", tags=["Face & Attendance API"])
 
-DB_URL = "postgresql://neondb_owner:npg_YyHMBoC3J4WL@ep-bitter-wind-a1be41ah-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+# DB_URL is loaded from environment; fallback to the Neon URL when DATABASE_URL is not set.
+DEFAULT_DATABASE_URL = "postgresql://neondb_owner:npg_W5QhsgdFI6lc@ep-round-butterfly-aqjvcjnd-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+DB_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
 
 # ==========================================
 # BỘ NHỚ LƯU TRẠNG THÁI ĐIỂM DANH ONLINE
@@ -192,7 +198,8 @@ def get_avg_vector(img_list: List[str]):
 def format_pgvector(vector_list):
     if not vector_list:
         return None
-    return f"[{','.join(map(str, vector_list))}]"
+    # return f"[{','.join(map(str, vector_list))}]"
+    return [float(x) for x in vector_list]
 
 # ==========================================
 # 4. API QUẢN LÝ PHIÊN ĐIỂM DANH ONLINE (MÃ PIN + ĐẾM NGƯỢC)

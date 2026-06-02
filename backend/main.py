@@ -5,16 +5,18 @@ from routes.auth import router as auth_router
 from routes.student import router as student_router
 from routes.teacher import router as teacher_router
 from routes.face import router as face_router # Đã mở khóa
-from database.db import Base
+from database.db import engine, Base
 from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+
 load_dotenv()
 
-# Chuỗi kết nối Database
-DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
-engine = create_engine(DATABASE_URL)
+# # Chuỗi kết nối Database
+# # DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
+# DATABASE_URL = "postgresql://neondb_owner:npg_W5QhsgdFI6lc@ep-round-butterfly-aqjvcjnd-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+# engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
