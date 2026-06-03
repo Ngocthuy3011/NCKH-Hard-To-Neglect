@@ -43,7 +43,7 @@ ImageIO==2.37.3
 insightface==0.7.3
 itsdangerous==2.2.0
 jax==0.6.2
-jaxlib==0.6.2
+jaxlib==...
 Jinja2==3.1.6
 joblib==1.5.3
 kiwisolver==1.4.9
