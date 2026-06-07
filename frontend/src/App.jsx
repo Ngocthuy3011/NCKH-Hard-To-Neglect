@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import LecturerLayout from "./pages/lecturer/MainLayout";
-import Dashboard from "./pages/lecturer/Dashboard";
+import Dashboard from "./pages/lecturer/dashboard";
 import Attendance from "./pages/lecturer/Attendance";
 import Statistics from "./pages/lecturer/Statistics";
 import ManageClass from "./pages/lecturer/ManageClass";
@@ -14,7 +14,6 @@ import StudentProfile from "./pages/student/StudentProfile";
 
 import RoleSelection from "./layouts/RoleSelection";
 import Login from "./layouts/Login";
-// ĐÃ XÓA: import Register from "./layouts/Register";
 
 function App() {
   const [role, setRole] = useState(null);
