@@ -5,11 +5,12 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%; /* Đổi từ 100vw thành 100% để sửa lỗi thanh cuộn ngang */
   background: linear-gradient(135deg, #f0f4fd 0%, #c5d3ee 100%);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  padding: 0;
+  padding: 20px; /* Thêm đệm để không bị chạm sát mép viền đt */
+  box-sizing: border-box; /* Bắt buộc để padding không làm tràn khung */
 }
 
 .role-title {
@@ -17,18 +18,23 @@
   color: #1a365d;
   margin-bottom: 10px;
   font-weight: bold;
+  text-align: center;
 }
 
 .role-subtitle {
   font-size: 1.1rem;
   color: #4a5568;
   margin-bottom: 50px;
+  text-align: center;
 }
 
 /* Khu vực chứa 2 thẻ Card */
 .card-wrapper {
   display: flex;
   gap: 40px;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Định dạng thẻ Card to bự */
@@ -81,4 +87,34 @@
 
 .teacher-card:hover {
   border-bottom: 6px solid #e53e3e;
+}
+
+/* =========================================================
+   THẦN CHÚ RESPONSIVE CHO ĐIỆN THOẠI
+   ========================================================= */
+@media screen and (max-width: 768px) {
+  .card-wrapper {
+    flex-direction: column; /* Ép 2 thẻ card XẾP DỌC trên điện thoại */
+    gap: 20px; /* Thu hẹp khoảng cách cho đỡ tốn diện tích màn hình */
+  }
+
+  .role-title {
+    font-size: 2rem; /* Thu nhỏ tiêu đề một chút */
+  }
+
+  .role-subtitle {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+
+  .role-card {
+    width: 100%;
+    max-width: 320px;
+    height: auto; /* Chiều cao linh hoạt tự động nới lỏng ra */
+    padding: 40px 20px; 
+  }
+  
+  .icon-box {
+    font-size: 60px; /* Nhỏ gọn icon lại xíu xiu */
+  }
 }

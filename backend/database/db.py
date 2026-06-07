@@ -12,7 +12,11 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
 
 # SQLALCHEMY_DATABASE_URL = "postgresql://postgres:nckh%40HTN@localhost:5433/postgres"
 # Động cơ kết nối
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,      # Tự động gõ cửa kiểm tra kết nối trước khi dùng
+    pool_recycle=3600        # Tự động làm mới kết nối sau mỗi 1 tiếng
+)
 
 # Quản lý phiên làm việc (Session)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
